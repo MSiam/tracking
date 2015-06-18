@@ -12,9 +12,11 @@ void motionCompensation::processFrame(cv::Mat frame, cv::Mat previousFrame)
 	rects= clustrer.dbScanClustering(nrects, frame.cols, frame.rows);
 	for(int i=0; i<nrects; i++)
 	{
-		if(rects[i].bb.width+ rects[i].bb.x> frame.cols)
+		if(rects[i].bb.width+ rects[i].bb.x +20> frame.cols)
 			rects[i].neglected= true;
-		if(rects[i].bb.height+ rects[i].bb.y> frame.rows)
+		if(rects[i].bb.height+ rects[i].bb.y+20> frame.rows)
+			rects[i].neglected= true;
+		if(rects[i].bb.width<5 || rects[i].bb.height<5)
 			rects[i].neglected= true;
 	}
 

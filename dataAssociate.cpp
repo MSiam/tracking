@@ -45,11 +45,10 @@ double dataAssociate::checkIntersection(trackedRectangle rect1, trackedRectangle
 	return area;
 }
 
-/*trackedRectangle *dataAssociate::bindTrackingDetection(trackedRectangle *dets, int ndets, trackedRectangle *tracks, int &ntracks, Mat frame)
+trackedRectangle *dataAssociate::bindTrackingDetection(trackedRectangle *dets, int ndets, trackedRectangle *tracks, int &ntracks, Mat frame)
 {
 	double threshold= 10;
 	bool foundMatch=false;
-	KalmanTracking tr;
 	
 	//1- Copy only the non neglected tracks
 	trackedRectangle *finalTracks= new trackedRectangle[ndets+ntracks];
@@ -63,18 +62,18 @@ double dataAssociate::checkIntersection(trackedRectangle rect1, trackedRectangle
 		k++;
 	}
 	int nfinalTracks= k;
-	
+	int nrectsCounter= nfinalTracks;
+
 	//2- Initialize found of track to false till associated
-	//int nrectsCounter=nrects3;
 	for(int j=0; j<ndets; j++) //Iterate on rectangles from detection
 	{
 		foundMatch=false;
 		if(dets[j].neglected)
 			continue;
 
-		for(int i=0; i<nfinalTracks; i++) //Iterate on rectangles from tracking
+		for(int i=0; i<nrectsCounter; i++) //Iterate on rectangles from tracking
 		{
-			if(finalTracks[i].neglected )
+			if(finalTracks[i].neglected )//|| rects3[i].flag==1 || rects3[i].flag==2 || rects3[i].flag==3)//associated before
 				continue;
 
 			//3- Associate detected target to a track
@@ -89,35 +88,38 @@ double dataAssociate::checkIntersection(trackedRectangle rect1, trackedRectangle
 				foundMatch=true;
 				//found[i]= true;
 				
-				if(flag==1)
+				if(flag==1)// Obj Flag
 				{
-					Point2f pred= tr.updateKalman(finalTracks[i].kalman, Point2f(dets[j].bb.x + dets[j].bb.width/2, dets[j].bb.y + dets[j].bb.height/2));
-					finalTracks[i].bb= finalTracks[i].dsst.processFrame(frame, false, true);
-					/*finalTracks[i].bb.x= pred.x- dets[j].bb.width/2;
-					finalTracks[i].bb.y= pred.y- dets[j].bb.height/2;
-					finalTracks[i].bb.width= dets[j].bb.width;
-					finalTracks[i].bb.height= dets[j].bb.height;
-					 
-					if(finalTracks[i].bb.x<0)
-						finalTracks[i].bb.x=0;
-					if(finalTracks[i].bb.y<0)
-						finalTracks[i].bb.y=0;end of comment/////
+					//float *pred= updateKalman(rects3[i].kalman, coord(rects1[j].centroid.x, rects1[j].centroid.y));
+					//finalTracks[i].centroid.x= pred[0];
+					//finalTracks[i].centroid.y= pred[1];
+					//rects3[i].width= rects1[j].width;
+					//rects3[i].height= rects1[j].height;
+
+					//rects3[i].topLeftCorner.x= rects3[i].centroid.x- rects3[i].width/2;
+					//rects3[i].topLeftCorner.y= rects3[i].centroid.y- rects3[i].height/2;
+					//if(rects3[i].topLeftCorner.x<0)
+						//rects3[i].topLeftCorner.x=0;
+					//if(rects3[i].topLeftCorner.y<0)
+						//rects3[i].topLeftCorner.y=0;
 					
+					//track.updatePatch(mtDet.currentFrame, imgCol, &rects3[i]);
+					finalTracks[i].bb= finalTracks[i].dsst.processFrame(frame, true, true);
 					break;
 				}
 				else
 				{
-					//track.matchTemplate(mtDet.currentFrame, imgCol, &rects3[i]);
-					finalTracks[i].bb= finalTracks[i].dsst.processFrame(frame, false, true);
-					Point2f pred= tr.updateKalman(finalTracks[i].kalman, Point2f(finalTracks[i].bb.x+finalTracks[i].bb.width/2, finalTracks[i].bb.y+finalTracks[i].bb.height/2));
-					/*rects3[i].centroid.x= pred.x;
-					rects3[i].centroid.y= pred.y;
+					finalTracks[i].bb= finalTracks[i].bb= finalTracks[i].dsst.processFrame(frame, true, false);
+					/*track.matchTemplate(mtDet.currentFrame, imgCol, &rects3[i]);
+					float *pred= updateKalman(rects3[i].kalman, coord(rects3[i].centroid.x, rects3[i].centroid.y));
+					rects3[i].centroid.x= pred[0];
+					rects3[i].centroid.y= pred[1];
 					rects3[i].topLeftCorner.x= rects3[i].centroid.x- rects3[i].width/2;
 					rects3[i].topLeftCorner.y= rects3[i].centroid.y- rects3[i].height/2;
 					if(rects3[i].topLeftCorner.x<0)
 						rects3[i].topLeftCorner.x=0;
 					if(rects3[i].topLeftCorner.y<0)
-						rects3[i].topLeftCorner.y=0;///////end of comment/
+						rects3[i].topLeftCorner.y=0;*/
 				}
 				
 			}
@@ -126,8 +128,10 @@ double dataAssociate::checkIntersection(trackedRectangle rect1, trackedRectangle
 		if(!foundMatch) //New Object, should be added
 		{
 			finalTracks[nfinalTracks]= dets[j];
-			track.updatePatch(mtDet.currentFrame, imgCol, &rects3[nrects3]);
-			nrects3++;
+			finalTracks[nfinalTracks].dsst.preprocess(frame.rows, frame.cols, frame, finalTracks[nfinalTracks].bb);
+			finalTracks[nfinalTracks].first= false;
+			//track.updatePatch(mtDet.currentFrame, imgCol, &rects3[nrects3]);
+			nfinalTracks++;
 		}
 	}
 
@@ -135,47 +139,47 @@ double dataAssociate::checkIntersection(trackedRectangle rect1, trackedRectangle
 	for(int i=0; i<nrectsCounter; i++)
 	{
 		bool boundry= false;
-		int w= mtDet.currentFrame->width;
-		int h= mtDet.currentFrame->height;
-		if(rects3[i].topLeftCorner.x+ rects3[i].width>=(w-5))
+		int w= frame.cols;
+		int h= frame.rows;
+		if(finalTracks[i].bb.x+ finalTracks[i].bb.width>=(w-5))
 			boundry= true;
-		if(rects3[i].topLeftCorner.y+ rects3[i].height>=(h-5))
+		if(finalTracks[i].bb.y+ finalTracks[i].bb.height>=(h-5))
 			boundry= true;
-		if(rects3[i].topLeftCorner.x-5<=0)
+		if(finalTracks[i].bb.x-5<=0)
 			boundry= true;
-		if(rects3[i].topLeftCorner.y-5<=0)
+		if(finalTracks[i].bb.y-5<=0)
 			boundry= true;
 
-		if(rects3[i].flag==1)
+		if(finalTracks[i].flag==1)
 		{
-			rects3[i].ntracked++;
-			rects3[i].nNotDetected=0;
-			if(rects3[i].ntracked>2 && !rects3[i].trackReady)
+			finalTracks[i].ntracked++;
+			finalTracks[i].nNotDetected=0;
+			if(finalTracks[i].ntracked>2 && !finalTracks[i].trackReady)
 			{
-				rects3[i].trackID= globalIDCounter;
+				finalTracks[i].trackID= globalIDCounter;
 				globalIDCounter++;
-				rects3[i].trackReady= true;
+				finalTracks[i].trackReady= true;
 			}
 		}
-		else if(rects3[i].flag==2 || rects3[i].flag==3)
+		else if(finalTracks[i].flag==2 || finalTracks[i].flag==3)
 		{
-			if(rects3[i].trackReady )//&& !boundry)
-				rects3[i].nNotDetected=0;
+			if(finalTracks[i].trackReady )//&& !boundry)
+				finalTracks[i].nNotDetected=0;
 			else
 			{
-				rects3[i].nNotDetected++;
-				if(rects3[i].nNotDetected>3)
+				finalTracks[i].nNotDetected++;
+				if(finalTracks[i].nNotDetected>3)
 				{
-					rects3[i].neglected= true;
+					finalTracks[i].neglected= true;
 					continue;
 				}
-				else if(rects[i].nNotDetected>1 && boundry)
-					rects3[i].neglected= true;
+				else if(finalTracks[i].nNotDetected>1 && boundry)///// it was here rects not rects3
+					finalTracks[i].neglected= true;
 			}
 		}
 		else 
 		{
-			if(nrects1!=0)
+			if(ndets!=0)
 			{
 				//4- Correct, this part should be only implemented to objects not newly detected
 				//float *pred= updateKalman(rects3[i].kalman);//, coord(rects3[i].centroid.x, rects3[i].centroid.y));
@@ -188,84 +192,61 @@ double dataAssociate::checkIntersection(trackedRectangle rect1, trackedRectangle
 					if(rects3[i].topLeftCorner.x<0)
 						rects3[i].topLeftCorner.x=0;
 					if(rects3[i].topLeftCorner.y<0)
-						rects3[i].topLeftCorner.y=0;end of comment////
-					track.matchTemplate(mtDet.currentFrame, imgCol, &rects3[i]);
-					float *pred= updateKalman(rects3[i].kalman, coord(rects3[i].centroid.x, rects3[i].centroid.y));
+						rects3[i].topLeftCorner.y=0;*/
+					//track.matchTemplate(mtDet.currentFrame, imgCol, &rects3[i]);
+					//float *pred= updateKalman(rects3[i].kalman, coord(rects3[i].centroid.x, rects3[i].centroid.y));
+					finalTracks[i].bb= finalTracks[i].dsst.processFrame(frame, true, false);
 				}
 				
-				rects3[i].nNotDetected++;
-				if(rects3[i].nNotDetected>4 && rects3[i].ntracked<=10)
-					rects3[i].neglected= true;
-				else if(rects[i].nNotDetected>2 && boundry)
-					rects3[i].neglected= true;
-				else if(rects3[i].nNotDetected>15)
-					rects3[i].neglected= true;
+				finalTracks[i].nNotDetected++;
+				if(finalTracks[i].nNotDetected>4 && finalTracks[i].ntracked<=10)
+					finalTracks[i].neglected= true;
+				else if(finalTracks[i].nNotDetected>2 && boundry)///////it was rects here as well not rects3
+					finalTracks[i].neglected= true;
+				else if(finalTracks[i].nNotDetected>15)
+					finalTracks[i].neglected= true;
 			}
 			else
-				double score= track.matchTemplate(mtDet.currentFrame, imgCol, &rects3[i]);
-
-
-			rects3[i].topLeftCorner.x= rects3[i].centroid.x- rects3[i].width/2;
-			rects3[i].topLeftCorner.y= rects3[i].centroid.y- rects3[i].height/2;
-			if(rects3[i].topLeftCorner.x<0)
-				rects3[i].topLeftCorner.x=0;
-			if(rects3[i].topLeftCorner.y<0)
-				rects3[i].topLeftCorner.y=0;
+				finalTracks[i].bb= finalTracks[i].dsst.processFrame(frame, true, false);
+				//double score= track.matchTemplate(mtDet.currentFrame, imgCol, &rects3[i]);
 		}
 	}
 	
 
 	//delete[] found;
-	delete[] rects2;
-	rects2=0;
+	delete[] tracks;
+	tracks=0;
 	
-	if(nrects1!=0)
-		delete[] rects1;
-	rects1=0;
-	nrects2= nrects3;
+	if(ndets!=0)
+		delete[] dets;
+	dets=0;
+	ntracks= nfinalTracks;
 
 
-	for(int i=0; i<nrects3; i++)
+	for(int i=0; i<nfinalTracks; i++)
 	{		
-		if(rects3[i].neglected==true)
+		if(finalTracks[i].neglected==true)
 		{
-			if(rects3[i].templateMatched!=0)
-				cvReleaseImage(&rects3[i].templateMatched);
-			rects3[i].templateMatched=0;
-			if(rects3[i].candidateRegion!=0)
-				cvReleaseImage(&rects3[i].candidateRegion);
-			rects3[i].candidateRegion=0;
-			if(!rects3[i].first)
-				cvReleaseKalman(&rects3[i].kalman);
-			rects3[i].first= true;
-			if(rects3[i].templateMatchedFull!=0)
-				cvReleaseImage(&rects3[i].templateMatchedFull);
-			rects3[i].templateMatchedFull=0;
-			if(rects3[i].kpts!=0)
-				delete[] rects3[i].kpts;
-			rects3[i].kpts=0;
-			if(rects3[i].descs!=0)
-				delete[] rects3[i].descs;
-			rects3[i].descs=0;
+			finalTracks[i].first= true;
 			continue;
 		}
 
-		for(int j=0; j<nrects3; j++)
+		for(int j=0; j<nfinalTracks; j++)
 		{
 			if(i==j)
 				continue;
-			if(rects3[i].neglected)
+			if(finalTracks[i].neglected)
 				continue;
 
-			double area= help.checkIntersection(rects3[i], rects3[j]);
-			if(area/ (rects3[i].width*rects3[i].height)>=0.5 || area/ (rects3[j].width*rects3[j].height)>=0.5)
+			double area= checkIntersection(finalTracks[i], finalTracks[j]);
+			if(area/ (finalTracks[i].bb.width*finalTracks[i].bb.height)>=0.5 || area/ (finalTracks[j].bb.width*finalTracks[j].bb.height)>=0.5)
 			{
 				int removedIndex;
-				if(rects3[j].ntracked> rects3[i].ntracked)
+				if(finalTracks[j].ntracked> finalTracks[i].ntracked)
 					removedIndex= i;
-				else if(rects3[j].ntracked== rects3[i].ntracked)
+				else if(finalTracks[j].ntracked== finalTracks[i].ntracked)
 				{
-					if(rects3[j].nNotDetected< rects3[i].nNotDetected)
+					if(finalTracks[j].nNotDetected< finalTracks[i].nNotDetected)
 						removedIndex= i;
 					else
 						removedIndex=j;
@@ -273,30 +254,12 @@ double dataAssociate::checkIntersection(trackedRectangle rect1, trackedRectangle
 				else
 					removedIndex=j;
 				
-				if(rects3[removedIndex].ntracked<20)
+				if(finalTracks[removedIndex].ntracked<20)
 				{
-					rects3[removedIndex].neglected= true;
-					if(rects3[removedIndex].templateMatched!=0)
-						cvReleaseImage(&rects3[removedIndex].templateMatched);
-					rects3[removedIndex].templateMatched=0;
-					if(rects3[removedIndex].candidateRegion!=0)
-						cvReleaseImage(&rects3[removedIndex].candidateRegion);
-					rects3[removedIndex].candidateRegion=0;
-					if(!rects3[removedIndex].first)
-						cvReleaseKalman(&rects3[removedIndex].kalman);
-					rects3[i].first= true;
-					if(rects3[removedIndex].templateMatchedFull!=0)
-						cvReleaseImage(&rects3[removedIndex].templateMatchedFull);
-					rects3[removedIndex].templateMatchedFull=0;
-					if(rects3[removedIndex].kpts!=0)
-						delete[] rects3[removedIndex].kpts;
-					rects3[removedIndex].kpts=0;
-					if(rects3[removedIndex].descs!=0)
-						delete[] rects3[removedIndex].descs;
-					rects3[removedIndex].descs=0;
+					finalTracks[removedIndex].neglected= true;
 				}
 			}
 		}
 	}
-	return rects3;
-}*/
+	return finalTracks;
+}

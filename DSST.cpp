@@ -478,7 +478,8 @@ cv::Rect DSSTTracker::processFrame(cv::Mat img, bool enableScaling, bool trainin
 			tSetup.current_scale_factor= tSetup.max_scale_factor;
 	
 	}
-	train(false, img);
+	if(training)
+		train(false, img);
 
 	tSetup.centroid = updateCentroid(tSetup.centroid,tSetup.original.width*tSetup.current_scale_factor,tSetup.original.height*tSetup.current_scale_factor,img.cols,img.rows);
 	int left = tSetup.centroid.x - (tSetup.original.width/2*tSetup.current_scale_factor) ;

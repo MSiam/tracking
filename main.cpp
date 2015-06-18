@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include "motionCompensation.h"
+#include "dataAssociate.h"
 #include "tracker.h"
 using namespace std;
 
@@ -27,6 +28,7 @@ int main(int argc, char *argv[])
 	int frameNumber=0;
 	
 	motionCompensation mc;
+	dataAssociate da;
 	KalmanTracking tr;
 	cv::Mat frame, previousFrame;
 	trackedRectangle *finalRects;
@@ -43,11 +45,18 @@ int main(int argc, char *argv[])
 				mc.processFrame(frame, previousFrame);
 				finalRects= tr.trackObjects(mc.rects, frame, mc.nrects, 1, false);
 				nfinalRects= mc.nrects;
+				for(int i=0; i<nfinalRects; i++)
+				{
+					finalRects[i].trackID= da.globalIDCounter;
+					da.globalIDCounter++;
+				}
 			}
 			else
 			{
-				finalRects= tr.trackObjects(finalRects, frame, nfinalRects, 1, true);
-				nfinalRects= nfinalRects;
+				mc.processFrame(frame, previousFrame);
+				finalRects= da.bindTrackingDetection(mc.rects, mc.nrects, finalRects, nfinalRects, frame);
+				//finalRects= tr.trackObjects(finalRects, frame, nfinalRects, 1, false);
+				//nfinalRects= nfinalRects;
 			}
 
 			for(int i=0; i<nfinalRects; i++)

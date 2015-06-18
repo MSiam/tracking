@@ -42,7 +42,7 @@ trackedRectangle *KalmanTracking::trackObjects(trackedRectangle *rects, Mat fram
 {
 	for(int i=0; i<nrects; i++)
 	{
-		if(rects[i].first && !update)
+		if(rects[i].first)// && !update)
 		{
 
 			//1- Create Kalman Object
@@ -51,8 +51,8 @@ trackedRectangle *KalmanTracking::trackObjects(trackedRectangle *rects, Mat fram
 			rects[i].dsst.preprocess(frame.rows, frame.cols, frame, rects[i].bb);
 			rects[i].first= false;
 		}
-		else
-			rects[i].bb= rects[i].dsst.processFrame(frame, true, true);
+		/*else
+			rects[i].bb= rects[i].dsst.processFrame(frame, true, true);*/
 	}
 	
 	return rects;

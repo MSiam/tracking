@@ -1,11 +1,20 @@
-#include <opencv2\opencv.hpp>
+#include <opencv2/opencv.hpp>
 using namespace cv;
 struct HOGParams
 {
-	int binSize;
+	int transBinSize;
+	int scaleBinSize;
 	int nOrients;
 	int softBin;
 	float clipHog;
+	HOGParams()
+	{
+		transBinSize = 4;
+		scaleBinSize = 4;
+		nOrients = 9;
+		clipHog = 0.2;
+		softBin = -1;
+	}
 };
 
 struct GT
@@ -46,6 +55,7 @@ struct trackingSetup
 	Point centroid;
 	Size original;
 	Size padded;
+	bool enableScale = false;
 };
 
 struct Params
@@ -61,14 +71,14 @@ struct Params
 
 	Params()
 	{
-		padding = 1;
-		output_sigma_factor= 1.0/16;
-		scale_sigma_factor= 1.0/4;
-		lambda= 1e-2;
-		learning_rate= 0.025;
-		number_scales= 33;
-		scale_step=1.02;
-		scale_model_max_area= 512;
+		padding = 1.5;
+		output_sigma_factor = 1.0 / 16;
+		scale_sigma_factor = 1.0 / 4;
+		lambda = 1e-2;
+		learning_rate = 0.025;
+		number_scales = 33;
+		scale_step = 1.02;
+		scale_model_max_area = 512;
 	}
 
 };

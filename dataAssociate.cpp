@@ -2,16 +2,17 @@
 
 bool dataAssociate::checkBoundary(Mat frame, Rect track)
 {
+	int indent= 1;
 	bool boundry= false;
 	int w= frame.cols;
 	int h= frame.rows;
-	if(track.x+ track.width>=(w-5))
+	if(track.x+ track.width>=(w-indent))
 		boundry= true;
-	if(track.y+ track.height>=(h-5))
+	if(track.y+ track.height>=(h-indent))
 		boundry= true;
-	if(track.x-5<=0)
+	if(track.x-indent<=0)
 		boundry= true;
-	if(track.y-5<=0)
+	if(track.y-indent<=0)
 		boundry= true;
 	return boundry;
 }

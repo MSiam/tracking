@@ -20,10 +20,9 @@ string intToStr(int i, string path ,int sz , string post){
 
 int main(int argc, char *argv[])
 {
-	int currentDS= 0;
-	string datasets[] = {"egtest01", "egtest02"};
-
-	//C:\Users\mincosy\Desktop\Aerial Tracking\datasets\egtest01
+	int currentDS= 3;
+	string datasets[] = {"egtest01", "egtest02", "egtest03", "egtest04", "egtest05", "redTeam"};
+	int frames[] = {1802, 1300, 2570, 1832, 1763, 1917};
 	string path= "C:\\Users\\mincosy\\Desktop\\Aerial Tracking\\datasets\\"+datasets[currentDS]+"\\";
 	int frameNumber=0;
 	
@@ -33,7 +32,7 @@ int main(int argc, char *argv[])
 	cv::Mat frame, previousFrame;
 	trackedRectangle *finalRects;
 	int nfinalRects;
-	while(frameNumber<1802)
+	while(frameNumber<frames[currentDS])
 	{
 		string fileName= intToStr(frameNumber, path, 5, ".jpg");
 		cv::Mat frame= cv::imread(fileName.c_str());
@@ -43,7 +42,7 @@ int main(int argc, char *argv[])
 			if(frameNumber==1) //Initialize tracking
 			{
 				mc.processFrame(frame, previousFrame);
-				finalRects= da.initTracking(mc.rects, frame, mc.nrects, 1, false);
+				finalRects= da.initTracking(mc.rects, frame, mc.nrects, 1);
 				nfinalRects= mc.nrects;
 				for(int i=0; i<nfinalRects; i++)
 				{
@@ -62,11 +61,14 @@ int main(int argc, char *argv[])
 			putText(frame3, ss.str(), Point(0, 20), FONT_HERSHEY_SIMPLEX, 1, Scalar(1), 2);
 			for(int i=0; i<mc.nrects; i++)
 			{
+				if(mc.rects[i].neglected)
+					continue;
+
 				rectangle(frame3, Point2f(mc.rects[i].bb.x, mc.rects[i].bb.y), Point2f(mc.rects[i].bb.x+mc.rects[i].bb.width, mc.rects[i].bb.y+mc.rects[i].bb.height),Scalar(0,0,255) );
 			}
 			imshow("dets", frame3);
 
-
+			
 			Mat frame2= frame.clone();
 			stringstream ss2;
 			ss2<<frameNumber;

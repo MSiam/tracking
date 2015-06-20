@@ -14,7 +14,7 @@ public:
 		globalIDCounter=0;
 	}
 	bool checkBoundary(Mat frame, Rect track);
-	trackedRectangle *initTracking(trackedRectangle *rects, Mat frame, int nrects, int dt, bool update);
+	trackedRectangle *initTracking(trackedRectangle *rects, Mat frame, int nrects, int dt);
 	int associate(trackedRectangle rect1, trackedRectangle rect2, double area);
 	double checkIntersection(trackedRectangle rect1, trackedRectangle rect2);
 	trackedRectangle *bindTrackingDetection(trackedRectangle *dets, int ndets, trackedRectangle *tracks, int &ntracks, Mat frame);

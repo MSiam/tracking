@@ -17,13 +17,15 @@ bool dataAssociate::checkBoundary(Mat frame, Rect track)
 	return boundry;
 }
 
-trackedRectangle *dataAssociate::initTracking(trackedRectangle *rects, Mat frame, int nrects, int dt, bool update)
+trackedRectangle *dataAssociate::initTracking(trackedRectangle *rects, Mat frame, int nrects, int dt)
 {
 	for(int i=0; i<nrects; i++)
 	{
-		if(rects[i].first)// && !update)
-		{
+		if(rects[i].neglected)
+			continue;
 
+		if(rects[i].first)
+		{
 			//1- Create Kalman Object
 			//rects[i].kalman= initKalman(Point2f(rects[i].bb.x+rects[i].bb.width/2, rects[i].bb.y+rects[i].bb.height/2), dt);
 			//cout<<"Init tracking "<<i<<endl;
@@ -195,8 +197,8 @@ trackedRectangle *dataAssociate::bindTrackingDetection(trackedRectangle *dets, i
 					finalTracks[i].neglected= true;
 				else if(finalTracks[i].nNotDetected>6 && finalTracks[i].ntracked<=10)
 					finalTracks[i].neglected= true;
-				else if(finalTracks[i].nNotDetected>15)
-					finalTracks[i].neglected= true;
+				//else if(finalTracks[i].nNotDetected>15)
+				//	finalTracks[i].neglected= true;
 			}
 			else
 				finalTracks[i].bb= finalTracks[i].trObj.processFrame(frame);

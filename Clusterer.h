@@ -8,7 +8,7 @@
 #include <opencv2/video/tracking.hpp>
 #include "dbscan.h"
 #include "distance.h"
-#include "DSST.h"
+#include "KCFTracker.h"
 using namespace std;
 using namespace cv;
 
@@ -25,7 +25,7 @@ public:
 	int flag;
 	
 	KalmanFilter kalman;
-	DSSTTracker dsst;
+	KCFTracker trObj;
 };
 
 class Clusterer

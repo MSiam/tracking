@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
 			if(frameNumber==1) //Initialize tracking
 			{
 				mc.processFrame(frame, previousFrame);
-				finalRects= tr.trackObjects(mc.rects, frame, mc.nrects, 1, false);
+				finalRects= da.initTracking(mc.rects, frame, mc.nrects, 1, false);
 				nfinalRects= mc.nrects;
 				for(int i=0; i<nfinalRects; i++)
 				{
@@ -55,19 +55,32 @@ int main(int argc, char *argv[])
 			{
 				mc.processFrame(frame, previousFrame);
 				finalRects= da.bindTrackingDetection(mc.rects, mc.nrects, finalRects, nfinalRects, frame);
-				//finalRects= tr.trackObjects(finalRects, frame, nfinalRects, 1, false);
-				//nfinalRects= nfinalRects;
 			}
+			Mat frame3= frame.clone();
+			stringstream ss;
+			ss<<frameNumber;
+			putText(frame3, ss.str(), Point(0, 20), FONT_HERSHEY_SIMPLEX, 1, Scalar(1), 2);
+			for(int i=0; i<mc.nrects; i++)
+			{
+				rectangle(frame3, Point2f(mc.rects[i].bb.x, mc.rects[i].bb.y), Point2f(mc.rects[i].bb.x+mc.rects[i].bb.width, mc.rects[i].bb.y+mc.rects[i].bb.height),Scalar(0,0,255) );
+			}
+			imshow("dets", frame3);
 
+
+			Mat frame2= frame.clone();
+			stringstream ss2;
+			ss2<<frameNumber;
+			putText(frame2, ss2.str(), Point(0, 20), FONT_HERSHEY_SIMPLEX, 1, Scalar(1), 2);
 			for(int i=0; i<nfinalRects; i++)
 			{
-				if(finalRects[i].neglected)
+				if(finalRects[i].neglected || !finalRects[i].trackReady)
 					continue;
 		
-				rectangle(frame, Point2f(finalRects[i].bb.x, finalRects[i].bb.y), Point2f(finalRects[i].bb.x+finalRects[i].bb.width, finalRects[i].bb.y+finalRects[i].bb.height),Scalar(0,0,255) );
+				rectangle(frame2, Point2f(finalRects[i].bb.x, finalRects[i].bb.y), Point2f(finalRects[i].bb.x+finalRects[i].bb.width, finalRects[i].bb.y+finalRects[i].bb.height),Scalar(0,0,255) );
 			}
+			imshow("tracks", frame2);
 		}
-		imshow("testing", frame);
+		
 		waitKey(10);
 		previousFrame= frame;
 		frameNumber++;

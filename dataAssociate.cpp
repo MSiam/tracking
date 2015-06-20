@@ -1,10 +1,44 @@
 #include "dataAssociate.h"
 
+bool dataAssociate::checkBoundary(Mat frame, Rect track)
+{
+	bool boundry= false;
+	int w= frame.cols;
+	int h= frame.rows;
+	if(track.x+ track.width>=(w-5))
+		boundry= true;
+	if(track.y+ track.height>=(h-5))
+		boundry= true;
+	if(track.x-5<=0)
+		boundry= true;
+	if(track.y-5<=0)
+		boundry= true;
+	return boundry;
+}
+
+trackedRectangle *dataAssociate::initTracking(trackedRectangle *rects, Mat frame, int nrects, int dt, bool update)
+{
+	for(int i=0; i<nrects; i++)
+	{
+		if(rects[i].first)// && !update)
+		{
+
+			//1- Create Kalman Object
+			//rects[i].kalman= initKalman(Point2f(rects[i].bb.x+rects[i].bb.width/2, rects[i].bb.y+rects[i].bb.height/2), dt);
+			//cout<<"Init tracking "<<i<<endl;
+			rects[i].trObj.preprocess(frame, Point(rects[i].bb.x+rects[i].bb.width/2,rects[i].bb.y+rects[i].bb.height/2), rects[i].bb.width, rects[i].bb.height );
+			rects[i].first= false;
+		}
+	}
+	
+	return rects;
+}
+
 int dataAssociate::associate(trackedRectangle rect1, trackedRectangle rect2, double area)
 {
 	int flag;
 	//double th= 0.55;
-	double th= 0.6;
+	double th= 0.7;
 	double a1= rect1.bb.width*rect1.bb.height;
 	double a2= rect2.bb.width*rect2.bb.height;
 	
@@ -73,7 +107,7 @@ trackedRectangle *dataAssociate::bindTrackingDetection(trackedRectangle *dets, i
 
 		for(int i=0; i<nrectsCounter; i++) //Iterate on rectangles from tracking
 		{
-			if(finalTracks[i].neglected )//|| rects3[i].flag==1 || rects3[i].flag==2 || rects3[i].flag==3)//associated before
+			if(finalTracks[i].neglected )
 				continue;
 
 			//3- Associate detected target to a track
@@ -82,44 +116,55 @@ trackedRectangle *dataAssociate::bindTrackingDetection(trackedRectangle *dets, i
 			int flag= associate(dets[j], finalTracks[i], area); //flag= 0->NA, 1->Obj, 2->Split, 3->Merge
 			if(finalTracks[i].flag<=0 || (finalTracks[i].flag!=1 && flag==1))
 				finalTracks[i].flag= flag;
+			//cout<<"Track "<<i<<" Det "<<j<<" :: "<<flag<<endl;
 
 			if(flag==1 || flag==2 || flag==3)
 			{
 				foundMatch=true;
-				//found[i]= true;
-				
 				if(flag==1)// Obj Flag
-				{
-					//float *pred= updateKalman(rects3[i].kalman, coord(rects1[j].centroid.x, rects1[j].centroid.y));
-					//finalTracks[i].centroid.x= pred[0];
-					//finalTracks[i].centroid.y= pred[1];
-					//rects3[i].width= rects1[j].width;
-					//rects3[i].height= rects1[j].height;
-
-					//rects3[i].topLeftCorner.x= rects3[i].centroid.x- rects3[i].width/2;
-					//rects3[i].topLeftCorner.y= rects3[i].centroid.y- rects3[i].height/2;
-					//if(rects3[i].topLeftCorner.x<0)
-						//rects3[i].topLeftCorner.x=0;
-					//if(rects3[i].topLeftCorner.y<0)
-						//rects3[i].topLeftCorner.y=0;
+				{	
 					
-					//track.updatePatch(mtDet.currentFrame, imgCol, &rects3[i]);
-					finalTracks[i].bb= finalTracks[i].dsst.processFrame(frame, true, true);
+					finalTracks[i].bb= finalTracks[i].trObj.processFrame(frame);
+					bool boundry= checkBoundary(frame, finalTracks[i].bb);
+					
+					finalTracks[i].ntracked++;
+					finalTracks[i].nNotDetected=0;
+					if(finalTracks[i].ntracked>2 && !finalTracks[i].trackReady)
+					{
+						finalTracks[i].trackID= globalIDCounter;
+						globalIDCounter++;
+						finalTracks[i].trackReady= true;
+					}
+					else if(finalTracks[i].trackReady && boundry)//Object is leaving FOV
+						finalTracks[i].neglected= true;
+			
+					//finalTracks[i].bb.width= dets[j].bb.width;
+					//finalTracks[i].bb.height= dets[j].bb.height;
+					/*finalTracks[i].bb.x= (finalTracks[i].bb.x+dets[j].bb.x)/2;
+					finalTracks[i].bb.y= (finalTracks[i].bb.y+dets[j].bb.y)/2;
+					finalTracks[i].bb.width= (finalTracks[i].bb.width+dets[j].bb.width)/2;
+					finalTracks[i].bb.height= (finalTracks[i].bb.height+dets[j].bb.height)/2;*/
+					
 					break;
 				}
 				else
 				{
-					finalTracks[i].bb= finalTracks[i].bb= finalTracks[i].dsst.processFrame(frame, true, false);
-					/*track.matchTemplate(mtDet.currentFrame, imgCol, &rects3[i]);
-					float *pred= updateKalman(rects3[i].kalman, coord(rects3[i].centroid.x, rects3[i].centroid.y));
-					rects3[i].centroid.x= pred[0];
-					rects3[i].centroid.y= pred[1];
-					rects3[i].topLeftCorner.x= rects3[i].centroid.x- rects3[i].width/2;
-					rects3[i].topLeftCorner.y= rects3[i].centroid.y- rects3[i].height/2;
-					if(rects3[i].topLeftCorner.x<0)
-						rects3[i].topLeftCorner.x=0;
-					if(rects3[i].topLeftCorner.y<0)
-						rects3[i].topLeftCorner.y=0;*/
+					finalTracks[i].bb= finalTracks[i].bb= finalTracks[i].trObj.processFrame(frame);
+					bool boundry= checkBoundary(frame, finalTracks[i].bb);
+					
+					if(finalTracks[i].trackReady)
+						finalTracks[i].nNotDetected=0;
+					else
+					{
+						finalTracks[i].nNotDetected++;
+						if(finalTracks[i].nNotDetected>3)
+						{
+							finalTracks[i].neglected= true;
+							continue;
+						}
+						else if(finalTracks[i].nNotDetected>1 && boundry)///// it was here rects not rects3
+							finalTracks[i].neglected= true;
+					}
 				}
 				
 			}
@@ -128,9 +173,9 @@ trackedRectangle *dataAssociate::bindTrackingDetection(trackedRectangle *dets, i
 		if(!foundMatch) //New Object, should be added
 		{
 			finalTracks[nfinalTracks]= dets[j];
-			finalTracks[nfinalTracks].dsst.preprocess(frame.rows, frame.cols, frame, finalTracks[nfinalTracks].bb);
+			Rect r= finalTracks[nfinalTracks].bb;
+			finalTracks[nfinalTracks].trObj.preprocess(frame, Point(r.x+r.width/2, r.y+r.height/2), r.width, r.height );
 			finalTracks[nfinalTracks].first= false;
-			//track.updatePatch(mtDet.currentFrame, imgCol, &rects3[nrects3]);
 			nfinalTracks++;
 		}
 	}
@@ -138,77 +183,22 @@ trackedRectangle *dataAssociate::bindTrackingDetection(trackedRectangle *dets, i
 	
 	for(int i=0; i<nrectsCounter; i++)
 	{
-		bool boundry= false;
-		int w= frame.cols;
-		int h= frame.rows;
-		if(finalTracks[i].bb.x+ finalTracks[i].bb.width>=(w-5))
-			boundry= true;
-		if(finalTracks[i].bb.y+ finalTracks[i].bb.height>=(h-5))
-			boundry= true;
-		if(finalTracks[i].bb.x-5<=0)
-			boundry= true;
-		if(finalTracks[i].bb.y-5<=0)
-			boundry= true;
-
-		if(finalTracks[i].flag==1)
-		{
-			finalTracks[i].ntracked++;
-			finalTracks[i].nNotDetected=0;
-			if(finalTracks[i].ntracked>2 && !finalTracks[i].trackReady)
-			{
-				finalTracks[i].trackID= globalIDCounter;
-				globalIDCounter++;
-				finalTracks[i].trackReady= true;
-			}
-		}
-		else if(finalTracks[i].flag==2 || finalTracks[i].flag==3)
-		{
-			if(finalTracks[i].trackReady )//&& !boundry)
-				finalTracks[i].nNotDetected=0;
-			else
-			{
-				finalTracks[i].nNotDetected++;
-				if(finalTracks[i].nNotDetected>3)
-				{
-					finalTracks[i].neglected= true;
-					continue;
-				}
-				else if(finalTracks[i].nNotDetected>1 && boundry)///// it was here rects not rects3
-					finalTracks[i].neglected= true;
-			}
-		}
-		else 
+		if(finalTracks[i].flag == 0) 
 		{
 			if(ndets!=0)
 			{
-				//4- Correct, this part should be only implemented to objects not newly detected
-				//float *pred= updateKalman(rects3[i].kalman);//, coord(rects3[i].centroid.x, rects3[i].centroid.y));
-				//if(pred[0]>0)
-				{
-					/*rects3[i].centroid.x= pred[0];
-					rects3[i].centroid.y= pred[1];
-					rects3[i].topLeftCorner.x= rects3[i].centroid.x- rects3[i].width/2;
-					rects3[i].topLeftCorner.y= rects3[i].centroid.y- rects3[i].height/2;
-					if(rects3[i].topLeftCorner.x<0)
-						rects3[i].topLeftCorner.x=0;
-					if(rects3[i].topLeftCorner.y<0)
-						rects3[i].topLeftCorner.y=0;*/
-					//track.matchTemplate(mtDet.currentFrame, imgCol, &rects3[i]);
-					//float *pred= updateKalman(rects3[i].kalman, coord(rects3[i].centroid.x, rects3[i].centroid.y));
-					finalTracks[i].bb= finalTracks[i].dsst.processFrame(frame, true, false);
-				}
-				
+				finalTracks[i].bb= finalTracks[i].trObj.processFrame(frame);
+				bool boundry= checkBoundary(frame, finalTracks[i].bb);
 				finalTracks[i].nNotDetected++;
-				if(finalTracks[i].nNotDetected>4 && finalTracks[i].ntracked<=10)
+				if(finalTracks[i].nNotDetected>2 && boundry)///////it was rects here as well not rects3
 					finalTracks[i].neglected= true;
-				else if(finalTracks[i].nNotDetected>2 && boundry)///////it was rects here as well not rects3
+				else if(finalTracks[i].nNotDetected>6 && finalTracks[i].ntracked<=10)
 					finalTracks[i].neglected= true;
 				else if(finalTracks[i].nNotDetected>15)
 					finalTracks[i].neglected= true;
 			}
 			else
-				finalTracks[i].bb= finalTracks[i].dsst.processFrame(frame, true, false);
-				//double score= track.matchTemplate(mtDet.currentFrame, imgCol, &rects3[i]);
+				finalTracks[i].bb= finalTracks[i].trObj.processFrame(frame);
 		}
 	}
 	
@@ -227,10 +217,10 @@ trackedRectangle *dataAssociate::bindTrackingDetection(trackedRectangle *dets, i
 	{		
 		if(finalTracks[i].neglected==true)
 		{
-			finalTracks[i].first= true;
+			//finalTracks[i].first= true;
 			continue;
 		}
-
+		
 		for(int j=0; j<nfinalTracks; j++)
 		{
 			if(i==j)

@@ -456,6 +456,9 @@ Mat *KCFTracker::createFeatureMap(Mat& patch, int &nChns, bool isScaling)
 	//cerr << "b4 fhogSSE" << endl;
 	fhogSSE(M, O, H, h, w, binSize, hParams.nOrients, hParams.softBin, hParams.clipHog);
 	//cerr << "after fhogSSE" << endl;
+	Mat roiGrayFlot = patch.clone();
+	roiGrayFlot = roiGrayFlot.mul(1.0 / 255);
+	roiGrayFlot = roiGrayFlot - 0.5;
 	Mat *featureMap;
 	
 	nChns = 28;
@@ -463,7 +466,7 @@ Mat *KCFTracker::createFeatureMap(Mat& patch, int &nChns, bool isScaling)
 	for (int i = 0; i<nChns; i++)
 		featureMap[i] = cv::Mat(hb, wb, CV_64FC1);
 
-	patch.convertTo(featureMap[0], CV_64FC1);
+	roiGrayFlot.convertTo(featureMap[0], CV_64FC1);
 	for (int j = 0; j<wb; j++)
 		for (int i = 0; i<hb; i++)
 			for (int k = 0; k<nChns - 1; k++)

@@ -382,7 +382,15 @@ Mat *KCFTracker::createFeatureMap2(Mat& patch, int &nChns, bool isScaling)
 	int wb = w / binSize;
 
 	Mat padPatch = patch;
-
+/*
+       int totalHPad = ceil((patch.rows/binSize + 1.5) * binSize) - patch.rows;
+       int bottom = totalHPad/2;
+       int top = totalHPad - bottom;
+       
+       int totalWPad =ceil((patch.cols/binSize + 1.5) * binSize) - patch.cols;
+       int right = totalWPad / 2;
+       int left = totalWPad - right;
+	   */
 	int totalHPad = binSize + 2 - (patch.rows % binSize);
 	int top = totalHPad / 2;
 	int bottom = totalHPad - top;
@@ -433,7 +441,7 @@ Mat *KCFTracker::createFeatureMap(Mat& patch, int &nChns, bool isScaling)
 	int h = patch.rows, w = patch.cols;
 	float* M = (float*) calloc(h * w, sizeof(float));
 	float* O = (float*) calloc(h * w, sizeof(float));
-
+	
 	float *img = convertTo1DFloatArray(patch);
 
 	gradMag(img, M, O, h, w, 1, 1);
@@ -445,13 +453,24 @@ Mat *KCFTracker::createFeatureMap(Mat& patch, int &nChns, bool isScaling)
 	nChns = hParams.nOrients * 3 + 5;
 	float *H = (float*) calloc(hb * wb * nChns, sizeof(float));
 	//cout << hb << "  " << wb << endl;
-	cerr << "b4 fhogSSE" << endl;
+	//cerr << "b4 fhogSSE" << endl;
 	fhogSSE(M, O, H, h, w, binSize, hParams.nOrients, hParams.softBin, hParams.clipHog);
-	cerr << "after fhogSSE" << endl;
+	//cerr << "after fhogSSE" << endl;
 	Mat *featureMap;
+	
+	nChns = 28;
+	featureMap = new Mat[nChns];
+	for (int i = 0; i<nChns; i++)
+		featureMap[i] = cv::Mat(hb, wb, CV_64FC1);
+
+	patch.convertTo(featureMap[0], CV_64FC1);
+	for (int j = 0; j<wb; j++)
+		for (int i = 0; i<hb; i++)
+			for (int k = 0; k<nChns - 1; k++)
+				featureMap[k + 1].at<double>(i, j) = H[k*(hb*wb) + j*hb + i];
+	/*
 	nChns = 31;
 	featureMap = new Mat[nChns];
-
 	for (int i = 0; i < nChns; i++)
 		featureMap[i] = cv::Mat(hb, wb, CV_64FC1);
 
@@ -459,7 +478,7 @@ Mat *KCFTracker::createFeatureMap(Mat& patch, int &nChns, bool isScaling)
 		for (int i = 0; i < hb; i++)
 			for (int k = 0; k < nChns; k++)
 				featureMap[k].at<double>(i, j) = H[k * (hb * wb) + j * hb + i];
-
+*/
 	if (!isScaling)
 		for (int i = 0; i < nChns; i++)
 			featureMap[i] = featureMap[i].mul(tSetup.trans_cos_win);

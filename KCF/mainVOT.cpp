@@ -30,6 +30,21 @@ struct GT
 	double x4;
 	double y4;
 };
+struct target
+{
+	CvRect init;
+	int firstFrame;
+
+	target(int x, int y, int w, int h, int firstF)
+	{
+		init.x = x;
+		init.y = y;
+		init.width = w;
+		init.height = h;
+		firstFrame = firstF;
+	}
+};
+
 GT *readGroundtruth(string path)
 {
 	GT *groundtruth = new GT[2000];
@@ -86,45 +101,81 @@ void visualize(Mat& img, VOTPolygon p)
 	rectangle(img, Rect(cen.x - w / 2, cen.y - h / 2, w, h), Scalar(0, 255, 0), 2);
 }
 
-void generateFiles(string dataset)
+void generateFiles(string dataset, int begin, int end, int count)
 {
-	string outDir = ""; //the path to the generated images.txt, region.txt (beside the binary tracker_vot)
+	string outDir = "";	//the path to the generated images.txt, region.txt (beside the binary tracker_vot)
 	ifstream fin2((outDir + "output.txt").c_str());
-	string fileName = intToStr(1, dataset, 8, ".jpg");
+	string fileName = intToStr(1, dataset, count, ".jpg");
 	char x;
 	ofstream images((outDir + "images.txt").c_str());
 
-	for (int i = 1; i <= 20000; i++) //20000
+	for (int i = begin; i < end; i++)	//20000
 	{
-		string fileName = intToStr(i, dataset, 8, ".jpg");
+		string fileName = intToStr(i, dataset, count, ".jpg");
 		Mat img = imread(fileName);
 		if (!img.data)
 			break;
 		images << fileName << endl;
 	}
-//177.68,183.11,175.57,127.67,226.96,125.55,229.07,180.99
+	//177.68,183.11,175.57,127.67,226.96,125.55,229.07,180.99
 	//196.34,158.07,198.21,116.09,243.61,117.94,241.73,159.93
 
-	ofstream region((outDir + "region.txt").c_str());
+	/*	ofstream region((outDir + "region.txt").c_str());
 	ifstream fgin((dataset + "groundtruth.txt").c_str());
 	GT currentGT;
 	string line;
 	getline(fgin, line);
-	fgin >> currentGT.x1 >> x >> currentGT.y1 >> x >> currentGT.x2 >> x >> currentGT.y2 >> x >> currentGT.x3 >> x >> currentGT.y3 >> x >> currentGT.x4 >> x >> currentGT.y4;
+	fgin >> currentGT.blx_ >> x >> currentGT.bly_ >> x >> currentGT.tlx_ >> x >> currentGT.tly_ >> x >> currentGT.trx_ >> x >> currentGT.try_ >> x >> currentGT.brx_ >> x >> currentGT.bry_;
+
 	region << line << endl;
-	region.close();
+	region.close();*/
 	images.close();
 }
+
+
 int main(int argc, char **argv)
 {
+	cv::Mat initFrame;
+
+	string working_directory = "D://Scene_DS//VIVID//";
+	string datasetNames[] = { "egtest01//", "egtest02//", "egtest03//", "egtest04//", "egtest05//","redteam//" };
+	int nFrames[] = { 1820, 1300, 2570, 1832, 1763, 1917 };
+	int currentDS = 1;
+	string initFile = working_directory + datasetNames[currentDS] + "InitMulti.txt";
+
+	std::vector<target> targets;
+	ifstream fin(initFile.c_str());
+	int ntargets, firstFrame;
+	int x, y, w, h;
+	while (!fin.eof())
+	{
+		fin >> firstFrame >> ntargets;
+		for (int j = 0; j < ntargets; j++)
+		{
+			fin >> x >> y >> w >> h;
+			target t(x, y, w, h, firstFrame);
+			targets.push_back(t);
+		}
+	}
+	fin.close();
+	
+	int currentTarget = 0;
+	ofstream fout("region.txt");
+	fout << targets[currentTarget].init.x << "," << targets[currentTarget].init.y << "," << targets[currentTarget].init.x + targets[currentTarget].init.width << "," << targets[currentTarget].init.y << ",";
+	fout << targets[currentTarget].init.x + targets[currentTarget].init.width << "," << targets[currentTarget].init.y + targets[currentTarget].init.height << "," << targets[currentTarget].init.x << "," << targets[currentTarget].init.y + targets[currentTarget].init.height << endl;
+	fout.close();
+
+	//load region, images and prepare for output
+	generateFiles(working_directory + datasetNames[currentDS] + "frame", targets[currentTarget].firstFrame, nFrames[currentDS], 5);
+
 	//generateFiles("/media/New Volume/Scene_DS/VOT/fernando/");
 	VOT vot_io("region.txt", "images.txt", "output.txt");
 	VOTPolygon p = vot_io.getInitPolygon();
 
 	Point centroid;
-	int w, h;
+	w, h;
 	convert8To4(p, centroid, w, h);
-	Mat initFrame;
+	initFrame;
 	bool resize_image = 0;//sqrt((w * h)) >= 100;
 	double resizeFactor = 1;//resize_image ? 2 : 1;
 	//cout<<resize_image<<endl;
@@ -167,9 +218,10 @@ int main(int argc, char **argv)
 		rect.height *= resizeFactor;
 		//cout << "Done Frame " << frameCnt << endl;
 		//visualize(displayImg, gt[i]);
-	/*	rectangle(displayImg, rect, Scalar(255, 0, 0), 2);
-		 imshow("", displayImg);
-		 waitKey(1);*/
+		putText(displayImg, intToStr(frameCnt, "", 0, ""), Point(10, 10), 1, 1, Scalar(0, 255, 0), 3);
+		rectangle(displayImg, rect, Scalar(255, 0, 0), 2);
+		imshow("", displayImg);
+		waitKey(1);
 
 		VOTPolygon result;
 

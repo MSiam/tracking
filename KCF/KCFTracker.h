@@ -24,7 +24,7 @@ private:
 		float clipHog;
 		HOGParams()
 		{
-			binSize = 4;
+			binSize = 1;
 			scaleBinSize = 4;
 			nOrients = 9;
 			clipHog = 0.2;
@@ -84,7 +84,7 @@ private:
 
 		Params()
 		{
-			padding = 1.5;
+			padding = 1;
 			lambda = 1e-4;
 			output_sigma_factor = 0.1;
 			interp_factor = 0.02;

@@ -13,6 +13,6 @@
 //#define getDiff(end,start) (float) (1000000000.0 * (end.tv_sec-start.tv_sec-1) + (end.tv_nsec-start.tv_nsec));
 //#define timeOfBlock(block,time) {timespec time1, time2; clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time1); block clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &time2);getDiff(time2,time1,time); } //cerr<<#time<<" "<<time<<endl;}
 #define getDiff(end,start) (float) (1000.0 * (end.time - start.time) + (end.millitm - start.millitm));
-#define timeOfBlock(block,time) {struct timeb opstart, opend; ftime(&opstart); block ftime(&opend); time = getDiff(opend,opstart); cerr<<#time<<" "<<time<<endl;}
+#define timeOfBlock(block,time) {struct timeb opstart, opend; ftime(&opstart); block ftime(&opend); time = getDiff(opend,opstart); }//cerr<<#time<<" "<<time<<endl;}
 
 #endif /* DEFINES_H_ */

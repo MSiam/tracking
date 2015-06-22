@@ -13,7 +13,8 @@
 #include "HOG.h"
 #include "vot.hpp"
 #include <windows.h>
- #include <time.h>
+#include <time.h>
+//#include <chrono>
 
 using namespace std;
 using namespace cv;
@@ -573,12 +574,15 @@ public:
 		
 			//Extract Features		
 			int nChns;
+			double t = (double)getTickCount(); 
 			#ifdef SSE
 				Mat *featureMap= create_feature_map(roiResized,1, nChns, Mat(), true);
 			#else
 				Mat *featureMap= create_feature_map2(roiResized,1, nChns, Mat(), true);
 			#endif
-		
+			t = ((double)getTickCount() - t)/getTickFrequency(); 
+			std::cout << "Times passed in seconds: " << t << std::endl;
+
 			float s= tSetup.scale_cos_win.at<float>(i,0);
 		
 			//Multiply by scale window + Save it as 1D array in the big array
@@ -680,11 +684,14 @@ public:
 		double elapsed;
 		start = clock();
 		*/
+		double t = (double)getTickCount(); 
 		#ifdef SSE
 			Mat *featureMap= create_feature_map(roi,1, nChns, roiGrayFlot, false);
 		#else
 			Mat *featureMap= create_feature_map2(roi,1, nChns, roiGrayFlot, false);
 		#endif
+		t = ((double)getTickCount() - t)/getTickFrequency(); 
+		std::cout << "Times passed in seconds: " << t << std::endl;
 
 		/*end = clock();
 		elapsed = ((double) (end - start)) / CLOCKS_PER_SEC;
@@ -1264,7 +1271,8 @@ int main()
 		
 		if(nextFrame!=1 || !currentFrame.data)
 			break;
-		
+		freopen("timeSSE.txt", "wt", stdout);
+
 		cv::Rect rect= dsst.processFrame(currentFrame, false);
 		
 		cv::Mat currentFrame2= currentFrame.clone();
@@ -1275,7 +1283,7 @@ int main()
 		/*if (frameNumber >= 1101)
 			waitKey(1000);
 		else*/
-			waitKey(1);
+			waitKey();
 		
         /*VOTPolygon result;
 

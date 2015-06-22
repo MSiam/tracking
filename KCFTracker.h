@@ -11,6 +11,8 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include "HOG.h"
+
 class KCFTracker
 {
 private:
@@ -24,7 +26,7 @@ private:
 		float clipHog;
 		HOGParams()
 		{
-			binSize = 4;
+			binSize = 1;
 			scaleBinSize = 4;
 			nOrients = 9;
 			clipHog = 0.2;

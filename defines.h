@@ -15,4 +15,5 @@
 #define getDiff(end,start) (float) (1000.0 * (end.time - start.time) + (end.millitm - start.millitm));
 #define timeOfBlock(block,time) {struct timeb opstart, opend; ftime(&opstart); block ftime(&opend); time = getDiff(opend,opstart); /*cerr<<#time<<" "<<time<<endl;*/}
 
+
 #endif /* DEFINES_H_ */

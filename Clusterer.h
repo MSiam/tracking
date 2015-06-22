@@ -9,6 +9,7 @@
 #include "dbscan.h"
 #include "distance.h"
 #include "KCFTracker.h"
+//#include "DSST.h"
 using namespace std;
 using namespace cv;
 
@@ -26,6 +27,7 @@ public:
 	
 	KalmanFilter kalman;
 	KCFTracker trObj;
+	//DSSTTracker trObj;
 };
 
 class Clusterer

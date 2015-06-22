@@ -1,28 +1,23 @@
-#ifndef INC_Params_H
-#define INC_Params_H
+#ifndef INC_PARAMS_H
+#define INC_PARAMS_H
 
-#include <opencv2\opencv.hpp>
+#include <opencv2/opencv.hpp>
 using namespace cv;
+
 struct HOGParams
 {
-	int binSize;
+	int transBinSize;
+	int scaleBinSize;
 	int nOrients;
 	int softBin;
 	float clipHog;
-};
-
-struct target
-{
-	CvRect init;
-	int firstFrame;
-
-	target(int x, int y, int w, int h, int firstF)
+	HOGParams()
 	{
-		init.x= x;
-		init.y= y;
-		init.width= w;
-		init.height= h;
-		firstFrame= firstF;
+		transBinSize = 1;
+		scaleBinSize = 4;
+		nOrients = 9;
+		clipHog = 0.2;
+		softBin = -1;
 	}
 };
 
@@ -64,6 +59,7 @@ struct trackingSetup
 	Point centroid;
 	Size original;
 	Size padded;
+	bool enableScale;
 };
 
 struct Params
@@ -79,14 +75,14 @@ struct Params
 
 	Params()
 	{
-		padding = 1;
-		output_sigma_factor= 1.0/16;
-		scale_sigma_factor= 1.0/4;
-		lambda= 1e-2;
-		learning_rate= 0.025;
-		number_scales= 33;
-		scale_step=1.02;
-		scale_model_max_area= 512;
+		padding = 1.5;
+		output_sigma_factor = 1.0 / 16;
+		scale_sigma_factor = 1.0 / 4;
+		lambda = 1e-2;
+		learning_rate = 0.025;
+		number_scales = 33;
+		scale_step = 1.02;
+		scale_model_max_area = 512;
 	}
 
 };

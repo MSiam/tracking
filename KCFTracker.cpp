@@ -9,19 +9,20 @@
 #include "KCFTracker.h"
 #include <iostream>
 #include "stdio.h"
-#include "HOG.h"
+//#include "HOG.h"
 #include <fstream>
 #include <iomanip>
 #include "defines.h"
 using namespace cv;
 using namespace std;
+#include <time.h>
 
 // small value, used to avoid division by zero
 #define eps 0.0001
 
 // unit vectors used to compute gradient orientation
 double uu[9] =
-{ 1.0000, 0.9397, 0.7660, 0.500, 0.1736, -0.1736, -0.5000, -0.7660, -0.9397 };
+{ 1.0000, 0.9397, 0.7660, 0.500, 0.1736, -0.1736, -0.5000, -0.7660, -0.9397 }; 
 double vv[9] =
 { 0.0000, 0.3420, 0.6428, 0.8660, 0.9848, 0.9848, 0.8660, 0.6428, 0.3420 };
 
@@ -32,6 +33,11 @@ static inline float min(float x, float y)
 static inline float max(float x, float y)
 {
 	return (x <= y ? y : x);
+}
+
+static inline double round(double num)
+{
+     return (num > 0.0) ? floor(num + 0.5) : ceil(num - 0.5);
 }
 
 static inline int min(int x, int y)
@@ -51,8 +57,8 @@ float *fhog(double *im, int* dims, int sbin)
 
 	// memory for caching orientation histograms & their norms
 	int blocks[2];
-	blocks[0] = (int) cvRound((double) dims[0] / (double) sbin);
-	blocks[1] = (int) cvRound((double) dims[1] / (double) sbin);
+	blocks[0] = (int) round((double) dims[0] / (double) sbin);
+	blocks[1] = (int) round((double) dims[1] / (double) sbin);
 	float *hist = (float *) calloc(blocks[0] * blocks[1] * 18, sizeof(float));
 	float *norm = (float *) calloc(blocks[0] * blocks[1], sizeof(float));
 
@@ -383,24 +389,28 @@ Mat *KCFTracker::createFeatureMap2(Mat& patch, int &nChns, bool isScaling)
 
 	Mat padPatch = patch;
 
-	int totalHPad = binSize + 2 - (patch.rows % binSize);
-	int top = totalHPad / 2;
+	int totalHPad = ceil(patch.rows/binSize + 1.5) * binSize - patch.rows;
+	int top = totalHPad/2;
 	int bottom = totalHPad - top;
-
-	int totalWPad = binSize + 2 - (patch.cols % binSize);
+	
+	int totalWPad = ceil(patch.cols/binSize + 1.5) * binSize - patch.cols;
 	int left = totalWPad / 2;
 	int right = totalWPad - left;
+	
 	//cout << "TopBottom " << top << "  " << bottom << "  LeftRight "<<left<<"  "<<right<<endl;
 	copyMakeBorder(patch, padPatch, top, bottom, left, right, BORDER_REPLICATE);
-	//cout << "new Size" << padPatch.size() << endl;
+	//cout<<patch.size() << "new Size" << padPatch.size() << endl;
 	double* imgD = convertTo1DFloatArrayDouble(padPatch);
 	int dims[] =
 	{ padPatch.rows, padPatch.cols };
-	hb = (int) cvRound((double) dims[0] / (double) binSize) - 2;
-	wb = (int) cvRound((double) dims[1] / (double) binSize) - 2;
+	
+	//hb = (int) round((double) dims[0] / (double) binSize) - 2;
+	//wb = (int) round((double) dims[1] / (double) binSize) - 2;
+	
 	//cout << "henaaa " << wb << "   " << hb << endl;
-	//cout << tSetup.trans_cos_win.size() << endl;
-	float* H = fhog(imgD, dims, 4);
+	//cout << "Cosine window "<<tSetup.trans_cos_win.size() << endl;
+	
+	float* H = fhog(imgD, dims, binSize);
 	/*imshow("patch", patch);
 	 imshow("patchPad", padPatch);
 	 waitKey();*/
@@ -476,7 +486,7 @@ Mat *KCFTracker::createFeatureMap(Mat& patch, int &nChns, bool isScaling)
 	 }
 	 }
 
-	 */
+	////*/
 
 	free(img);
 	free(H);
@@ -592,12 +602,23 @@ void KCFTracker::train(Mat img, bool first)
 	int nChns;
 	Mat* feature_map;
 	double transFeatureMap;
-	timeOfBlock( feature_map = createFeatureMap(roi, nChns);, transFeatureMap);
+	//timeOfBlock( 
+	clock_t start, end;
+    double elapsed;
+    start = clock();
+
+	feature_map = createFeatureMap2(roi, nChns);
+	
+	end = clock();
+    elapsed = ((double) (end - start)) / CLOCKS_PER_SEC;
+    std::cout<<elapsed<<endl;
+
+	//, transFeatureMap);
 	trainTime += transFeatureMap;
 
 	Mat *feature_map_fourier;
 	feature_map_fourier = new Mat[nChns];
-//cout<<"Feature Map Fourier Translation"<<endl;
+    //cout<<"Feature Map Fourier Translation"<<endl;
 	double trainFourier;
 	timeOfBlock( for (int i = 0; i < nChns; i++) createFourier(feature_map[i],feature_map_fourier[i] );, trainFourier);
 	trainTime += trainFourier;
@@ -803,7 +824,7 @@ Mat KCFTracker::get_scale_sample(Mat img, int &nDims, bool display)
 		}
 		//Extract Features
 		int nChns;
-		Mat *featureMap = createFeatureMap(roiResized, nChns, true);
+		Mat *featureMap = createFeatureMap2(roiResized, nChns, true);
 
 		float s = tSetup.scale_cos_win.at<double>(i, 0);
 
@@ -858,6 +879,8 @@ void KCFTracker::preprocess(Mat imgOrig, Point centroid, int w, int h)
 
 	int sz_w = tSetup.padded.width / hParams.binSize;
 	int sz_h = tSetup.padded.height / hParams.binSize;
+	//cout<<"SIZE "<<sz_w<<" "<<sz_h<<endl;
+	
 	//cout<<sz_w<<"  "<<sz_h<<endl;
 	//yf = fft2(gaussian_shaped_labels(output_sigma, floor(window_sz / cell_size)));
 	//tSetup.transFourier = cv::Mat::zeros(tSetup.transFourier.size(), tSetup.transFourier.type());
@@ -953,7 +976,9 @@ Rect KCFTracker::processFrame(cv::Mat imgOrig)
 	int nChns;
 	Mat* feature_map;
 	double getFeatureMap;
-	timeOfBlock(feature_map = createFeatureMap(roi, nChns) ;, getFeatureMap);
+	//timeOfBlock(
+	feature_map = createFeatureMap2(roi, nChns) ;
+	//, getFeatureMap);
 	totTime += getFeatureMap;
 
 	Mat *feature_map_fourier = new Mat[nChns];

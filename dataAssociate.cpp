@@ -30,6 +30,7 @@ trackedRectangle *dataAssociate::initTracking(trackedRectangle *rects, Mat frame
 			//rects[i].kalman= initKalman(Point2f(rects[i].bb.x+rects[i].bb.width/2, rects[i].bb.y+rects[i].bb.height/2), dt);
 			//cout<<"Init tracking "<<i<<endl;
 			rects[i].trObj.preprocess(frame, Point(rects[i].bb.x+rects[i].bb.width/2,rects[i].bb.y+rects[i].bb.height/2), rects[i].bb.width, rects[i].bb.height );
+			//rects[i].trObj.preprocess(frame.rows, frame.cols, frame, rects[i].bb);
 			rects[i].first= false;
 		}
 	}
@@ -178,6 +179,7 @@ trackedRectangle *dataAssociate::bindTrackingDetection(trackedRectangle *dets, i
 			finalTracks[nfinalTracks]= dets[j];
 			Rect r= finalTracks[nfinalTracks].bb;
 			finalTracks[nfinalTracks].trObj.preprocess(frame, Point(r.x+r.width/2, r.y+r.height/2), r.width, r.height );
+			//finalTracks[nfinalTracks].trObj.preprocess(frame.rows, frame.cols, frame, r);
 			finalTracks[nfinalTracks].first= false;
 			nfinalTracks++;
 		}

@@ -304,8 +304,7 @@ void hogSSE(float *M, float *O, float *H, int h, int w, int binSize,
 void fhogSSE(float *M, float *O, float *H, int h, int w, int binSize,
 		int nOrients, int softBin, float clip)
 {
-	const int hb = h / binSize, wb = w / binSize, nb = hb * wb,
-			nbo = nb * nOrients;
+	const int hb = h / binSize, wb = w / binSize, nb = hb * wb, nbo = nb * nOrients;
 	float *N, *R1, *R2;
 	int o, x;
 	// compute unnormalized constrast sensitive histograms
@@ -322,9 +321,7 @@ void fhogSSE(float *M, float *O, float *H, int h, int w, int binSize,
 	hogChannels(H + nbo * 0, R1, N, hb, wb, nOrients * 2, clip, 1);
 	hogChannels(H + nbo * 2, R2, N, hb, wb, nOrients * 1, clip, 1);
 	hogChannels(H + nbo * 3, R1, N, hb, wb, nOrients * 2, clip, 2);
-	wrFree(N);
-	wrFree(R1);
-	wrFree(R2);
+	wrFree(N);wrFree(R1);wrFree(R2);
 }
 
 /******************************************************************************/

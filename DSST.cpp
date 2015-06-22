@@ -570,60 +570,82 @@ void DSSTTracker::train(bool first, cv::Mat img)
 		mulSpectrums(feature_map_fourier[i], feature_map_fourier[i], temp, 0, true);
 		den= den+temp;
 	}
-	int nDimsScale;
-	Mat feature_map_scale_fourier= get_scale_sample(img, tSetup, tParams, nDimsScale);//I have to convert featuremap to double first
+	if(tSetup.enableScaling)
+	{
+		int nDimsScale;
+		Mat feature_map_scale_fourier= get_scale_sample(img, tSetup, tParams, nDimsScale);//I have to convert featuremap to double first
 		
-	Mat *num_scale= new Mat[feature_map_scale_fourier.rows];
-	Mat den_scale(1, nDimsScale, CV_64FC2);
-	den_scale= cv::Mat::zeros(1, nDimsScale, CV_64FC2);
+		Mat *num_scale= new Mat[feature_map_scale_fourier.rows];
+		Mat den_scale(1, nDimsScale, CV_64FC2);
+		den_scale= cv::Mat::zeros(1, nDimsScale, CV_64FC2);
 	
-	for(int i=0; i<feature_map_scale_fourier.rows; i++)
-	{
-		Mat temp(1, nDimsScale, CV_64FC2);
-		for(int j=0; j<nDimsScale; j++)
-			temp.at<Vec2d>(0, j)= feature_map_scale_fourier.at<Vec2d>(i, j);
-		
-		mulSpectrums(tSetup.scaleFourier, temp, num_scale[i], 0, true);
-		
-	}
-
-
-	Mat temp;
-	mulSpectrums(feature_map_scale_fourier, feature_map_scale_fourier, temp, 0, true);
-		
-	for(int i=0; i<temp.cols; i++)
-	{
-		for(int j=0; j<temp.rows; j++)
+		for(int i=0; i<feature_map_scale_fourier.rows; i++)
 		{
-			den_scale.at<Vec2d>(0,i)[0] += temp.at<Vec2d>(j,i)[0];
-			den_scale.at<Vec2d>(0,i)[1] += temp.at<Vec2d>(j,i)[1];
+			Mat temp(1, nDimsScale, CV_64FC2);
+			for(int j=0; j<nDimsScale; j++)
+				temp.at<Vec2d>(0, j)= feature_map_scale_fourier.at<Vec2d>(i, j);
+		
+			mulSpectrums(tSetup.scaleFourier, temp, num_scale[i], 0, true);
+		
 		}
-	}
-	
-	//Update Our Model
-	if(first)
-	{
-		tSetup.num_trans= num;
-		tSetup.nNumTrans= nDims;
-		tSetup.den_trans= den;
 
-		tSetup.num_scale= num_scale;
-		tSetup.nNumScale= nDimsScale;
-		tSetup.den_scale= den_scale;
+
+		Mat temp;
+		mulSpectrums(feature_map_scale_fourier, feature_map_scale_fourier, temp, 0, true);
+		
+		for(int i=0; i<temp.cols; i++)
+		{
+			for(int j=0; j<temp.rows; j++)
+			{
+				den_scale.at<Vec2d>(0,i)[0] += temp.at<Vec2d>(j,i)[0];
+				den_scale.at<Vec2d>(0,i)[1] += temp.at<Vec2d>(j,i)[1];
+			}
+		}
+	
+		//Update Our Model
+		if(first)
+		{
+			tSetup.num_trans= num;
+			tSetup.nNumTrans= nDims;
+			tSetup.den_trans= den;
+
+			tSetup.num_scale= num_scale;
+			tSetup.nNumScale= nDimsScale;
+			tSetup.den_scale= den_scale;
+		}
+		else
+		{
+			for(int i=0; i<tSetup.nNumTrans; i++)
+				tSetup.num_trans[i]= tSetup.num_trans[i].mul(1- tParams.learning_rate) + num[i].mul(tParams.learning_rate);
+			tSetup.den_trans= tSetup.den_trans.mul(1- tParams.learning_rate) + den.mul(tParams.learning_rate);
+
+			for(int i=0; i<feature_map_scale_fourier.rows; i++)
+				tSetup.num_scale[i]= tSetup.num_scale[i].mul(1- tParams.learning_rate) + num_scale[i].mul(tParams.learning_rate);
+			tSetup.den_scale= tSetup.den_scale.mul(1- tParams.learning_rate) + den_scale.mul(tParams.learning_rate);
+
+			delete[] num;
+			delete[] num_scale;
+		
+		}
 	}
 	else
 	{
-		for(int i=0; i<tSetup.nNumTrans; i++)
-			tSetup.num_trans[i]= tSetup.num_trans[i].mul(1- tParams.learning_rate) + num[i].mul(tParams.learning_rate);
-		tSetup.den_trans= tSetup.den_trans.mul(1- tParams.learning_rate) + den.mul(tParams.learning_rate);
+		if(first)
+		{
+			tSetup.num_trans= num;
+			tSetup.nNumTrans= nDims;
+			tSetup.den_trans= den;
 
-		for(int i=0; i<feature_map_scale_fourier.rows; i++)
-			tSetup.num_scale[i]= tSetup.num_scale[i].mul(1- tParams.learning_rate) + num_scale[i].mul(tParams.learning_rate);
-		tSetup.den_scale= tSetup.den_scale.mul(1- tParams.learning_rate) + den_scale.mul(tParams.learning_rate);
+		}
+		else
+		{
+			for(int i=0; i<tSetup.nNumTrans; i++)
+				tSetup.num_trans[i]= tSetup.num_trans[i].mul(1- tParams.learning_rate) + num[i].mul(tParams.learning_rate);
+			tSetup.den_trans= tSetup.den_trans.mul(1- tParams.learning_rate) + den.mul(tParams.learning_rate);
 
-		delete[] num;
-		delete[] num_scale;
+			delete[] num;
 		
+		}
 	}
 	delete[] feature_map;
 	delete[] feature_map_fourier;
@@ -713,39 +735,40 @@ cv::Rect DSSTTracker::processFrame(cv::Mat img)
 
 	tSetup.centroid = updateCentroid(tSetup.centroid,tSetup.original.width*tSetup.current_scale_factor,tSetup.original.height*tSetup.current_scale_factor,img.cols,img.rows);
 	
-	int nDimsScale;
+	if(tSetup.enableScaling)
+	{
+		int nDimsScale;
 	
-	Mat feature_map_scale_fourier = get_scale_sample(img, tSetup, tParams, nDimsScale);//I have to convert featuremap to double first
+		Mat feature_map_scale_fourier = get_scale_sample(img, tSetup, tParams, nDimsScale);//I have to convert featuremap to double first
 		
-	Mat* tempScale = new Mat[feature_map_scale_fourier.rows];
+		Mat* tempScale = new Mat[feature_map_scale_fourier.rows];
 		
-	for(int i=0; i<feature_map_scale_fourier.rows; i++)
-	{
-		Mat temp1(1, feature_map_scale_fourier.cols, CV_64FC2);
-		for(int j=0; j<feature_map_scale_fourier.cols; j++)
-			temp1.at<Vec2d>(0, j)= feature_map_scale_fourier.at<Vec2d>(i, j);
+		for(int i=0; i<feature_map_scale_fourier.rows; i++)
+		{
+			Mat temp1(1, feature_map_scale_fourier.cols, CV_64FC2);
+			for(int j=0; j<feature_map_scale_fourier.cols; j++)
+				temp1.at<Vec2d>(0, j)= feature_map_scale_fourier.at<Vec2d>(i, j);
 
-		mulSpectrums(tSetup.num_scale[i], temp1, tempScale[i],0, false);
-	}
-	w = nDimsScale;
-	Mat sumDenScale(1,w,CV_64F);
-	for(int k = 0 ; k < w ; k++)
-		sumDenScale.at<double>(0,k) = tSetup.den_scale.at<Vec2d>(0,k)[0] + tParams.lambda;
-	Mat sumTempScale(1,w,CV_64FC2);
-	sumTempScale= cv::Mat::zeros(sumTempScale.size(), CV_64FC2);
-	for(int k = 0 ; k < w ; k++)
-	{
+			mulSpectrums(tSetup.num_scale[i], temp1, tempScale[i],0, false);
+		}
+		w = nDimsScale;
+		Mat sumDenScale(1,w,CV_64F);
+		for(int k = 0 ; k < w ; k++)
+			sumDenScale.at<double>(0,k) = tSetup.den_scale.at<Vec2d>(0,k)[0] + tParams.lambda;
+		Mat sumTempScale(1,w,CV_64FC2);
+		sumTempScale= cv::Mat::zeros(sumTempScale.size(), CV_64FC2);
+		for(int k = 0 ; k < w ; k++)
+		{
 		
-		for(int i = 0 ; i < feature_map_scale_fourier.rows ; i++)
-			sumTempScale.at<Vec2d>(0,k) +=  tempScale[i].at<Vec2d>(0,k);
+			for(int i = 0 ; i < feature_map_scale_fourier.rows ; i++)
+				sumTempScale.at<Vec2d>(0,k) +=  tempScale[i].at<Vec2d>(0,k);
 
-		sumTempScale.at<Vec2d>(0,k) /= sumDenScale.at<double>(0,k);
-	}
+			sumTempScale.at<Vec2d>(0,k) /= sumDenScale.at<double>(0,k);
+		}
 		
-	Mat scale_response = cv::Mat::zeros(1, nDimsScale, CV_64FC1);
-	scale_response = inverseFourier(sumTempScale);
-	//if(enableScaling)
-	{
+		Mat scale_response = cv::Mat::zeros(1, nDimsScale, CV_64FC1);
+		scale_response = inverseFourier(sumTempScale);
+	
 		Point maxLocScale = ComputeMaxDisplayfl(scale_response);
 
 		tSetup.current_scale_factor= tSetup.current_scale_factor* tSetup.scaleFactors[maxLocScale.x];
@@ -753,6 +776,8 @@ cv::Rect DSSTTracker::processFrame(cv::Mat img)
 			tSetup.current_scale_factor= tSetup.min_scale_factor;
 		if(tSetup.current_scale_factor> tSetup.max_scale_factor)
 			tSetup.current_scale_factor= tSetup.max_scale_factor;
+	
+		delete[] tempScale;
 	
 	}
 	
@@ -766,13 +791,31 @@ cv::Rect DSSTTracker::processFrame(cv::Mat img)
 	delete[] feature_map;
 	delete[] feature_map_fourier;
 	delete[] temp;
-	delete[] tempScale;
 		
 	return rect;
 }
 
+/*DSSTTracker::~DSSTTracker()
+{
+	if(tSetup.num_trans!=0)
+	{
+		cout<<"here "<<tSetup.num_trans<<endl;
+		delete[] tSetup.num_trans;
+	}
+	if (tSetup.enableScaling)
+	{
+		delete[] tSetup.num_scale;
+		delete[] tSetup.scaleFactors;
+	}
+}*/
+
+DSSTTracker::DSSTTracker()
+{
+	tSetup.num_trans=0;
+}
 void DSSTTracker::preprocess(int rows,int cols, cv::Mat img, cv::Rect bb)
 {
+	tSetup.enableScaling= false;
 	tSetup.centroid.x = bb.x+bb.width/2;
 	tSetup.centroid.y = bb.y+bb.height/2;
 	tSetup.original.width = bb.width+1;

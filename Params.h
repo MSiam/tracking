@@ -71,6 +71,7 @@ struct trackingSetup
 	Point centroid;
 	Size original;
 	Size padded;
+	bool enableScaling;
 };
 
 struct Params

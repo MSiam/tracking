@@ -48,7 +48,7 @@ trackedRectangle *dataAssociate::initTracking(trackedRectangle *rects, Mat frame
 	return rects;
 }
 
-int dataAssociate::associate(trackedRectangle rect1, trackedRectangle rect2, double area)
+int dataAssociate::associate(trackedRectangle &rect1, trackedRectangle &rect2, double area)
 {
 	int flag;
 	//double th= 0.55;
@@ -69,8 +69,7 @@ int dataAssociate::associate(trackedRectangle rect1, trackedRectangle rect2, dou
 	return flag;
 }
 
-
-double dataAssociate::checkIntersection(trackedRectangle rect1, trackedRectangle rect2)
+double dataAssociate::checkIntersection(trackedRectangle &rect1, trackedRectangle &rect2)
 {
 	//trackedRectangle *rect;
 	if(rect1.bb.x+rect1.bb.width < rect2.bb.x)
@@ -123,27 +122,30 @@ trackedRectangle *dataAssociate::bindTrackingDetection(trackedRectangle *dets, i
 		{
 			if(finalTracks[i].neglected )
 				continue;
-
+			
 			//3- Associate detected target to a track
 			trackedRectangle intersectRect;
 			double area= checkIntersection(dets[j], finalTracks[i]);
+			//cout<<"associating"<<endl;
 			int flag= associate(dets[j], finalTracks[i], area); //flag= 0->NA, 1->Obj, 2->Split, 3->Merge
+			//cout<<"finish associating"<<endl;
 			if(finalTracks[i].flag<=0 || (finalTracks[i].flag!=1 && flag==1))
 				finalTracks[i].flag= flag;
-			//cout<<"Track "<<i<<" Det "<<j<<" :: "<<flag<<endl;
+			//cout<<i<<" "<<j<<" "<<flag<<endl;
 
 			if(flag==1 || flag==2 || flag==3)
 			{
 				foundMatch=true;
 				if(flag==1)// Obj Flag
 				{	
-					
+					//cout<<"process"<<endl;
 					finalTracks[i].bb= finalTracks[i].trObj.processFrame(frame);
+					//cout<<"finish process"<<endl;
 					bool boundry= checkBoundary(frame, finalTracks[i].bb);
 					
 					finalTracks[i].ntracked++;
 					finalTracks[i].nNotDetected=0;
-					if(finalTracks[i].ntracked>2 && !finalTracks[i].trackReady)
+					if(finalTracks[i].ntracked>3 && !finalTracks[i].trackReady)
 					{
 						finalTracks[i].trackID= globalIDCounter;
 						
@@ -152,19 +154,14 @@ trackedRectangle *dataAssociate::bindTrackingDetection(trackedRectangle *dets, i
 					}
 					else if(finalTracks[i].trackReady && boundry)//Object is leaving FOV
 						finalTracks[i].neglected= true;
-			
-					//finalTracks[i].bb.width= dets[j].bb.width;
-					//finalTracks[i].bb.height= dets[j].bb.height;
-					/*finalTracks[i].bb.x= (finalTracks[i].bb.x+dets[j].bb.x)/2;
-					finalTracks[i].bb.y= (finalTracks[i].bb.y+dets[j].bb.y)/2;
-					finalTracks[i].bb.width= (finalTracks[i].bb.width+dets[j].bb.width)/2;
-					finalTracks[i].bb.height= (finalTracks[i].bb.height+dets[j].bb.height)/2;*/
 					
 					break;
 				}
 				else
 				{
-					finalTracks[i].bb= finalTracks[i].bb= finalTracks[i].trObj.processFrame(frame);
+					//cout<<"process"<<endl;
+					finalTracks[i].bb= finalTracks[i].trObj.processFrame(frame);
+					//cout<<"finish process"<<endl;
 					bool boundry= checkBoundary(frame, finalTracks[i].bb);
 					
 					if(finalTracks[i].trackReady)
@@ -185,8 +182,10 @@ trackedRectangle *dataAssociate::bindTrackingDetection(trackedRectangle *dets, i
 			}
 		}
 
+		//cout<<"zeft"<<endl;
 		if(!foundMatch) //New Object, should be added
 		{
+			
 			finalTracks[nfinalTracks]= dets[j];
 			Rect r= finalTracks[nfinalTracks].bb;
 			#ifdef KCF
@@ -207,7 +206,9 @@ trackedRectangle *dataAssociate::bindTrackingDetection(trackedRectangle *dets, i
 		{
 			if(ndets!=0)
 			{
+				//cout<<"process"<<endl;
 				finalTracks[i].bb= finalTracks[i].trObj.processFrame(frame);
+				//cout<<"finish process"<<endl;
 				bool boundry= checkBoundary(frame, finalTracks[i].bb);
 				finalTracks[i].nNotDetected++;
 				if(finalTracks[i].nNotDetected>2 && boundry)///////it was rects here as well not rects3
@@ -218,20 +219,41 @@ trackedRectangle *dataAssociate::bindTrackingDetection(trackedRectangle *dets, i
 				//	finalTracks[i].neglected= true;
 			}
 			else
+			{
+				//cout<<"process"<<endl;
 				finalTracks[i].bb= finalTracks[i].trObj.processFrame(frame);
+				//cout<<"finish process"<<endl;
+			}
 		}
 	}
 	
-
+	
 	//delete[] found;
+	//cout<<"Deleting"<<endl;
+	for(int i=0; i<ntracks; i++)
+	{
+		if(tracks[i].neglected)
+		{
+			delete[] tracks[i].trObj.tSetup.num_trans;
+	
+			if (tracks[i].trObj.tSetup.enableScaling)
+			{
+				delete[] tracks[i].trObj.tSetup.num_scale;
+				delete[] tracks[i].trObj.tSetup.scaleFactors;
+			}
+		}
+	}
+	//cout<<"Finished deleting"<<endl;
 	delete[] tracks;
 	tracks=0;
 	
 	if(ndets!=0)
+	{
 		delete[] dets;
+	}
+
 	dets=0;
 	ntracks= nfinalTracks;
-
 
 	for(int i=0; i<nfinalTracks; i++)
 	{		
@@ -249,7 +271,7 @@ trackedRectangle *dataAssociate::bindTrackingDetection(trackedRectangle *dets, i
 				continue;
 
 			double area= checkIntersection(finalTracks[i], finalTracks[j]);
-			if(area/ (finalTracks[i].bb.width*finalTracks[i].bb.height)>=0.5 || area/ (finalTracks[j].bb.width*finalTracks[j].bb.height)>=0.5)
+			if(area/ (finalTracks[i].bb.width*finalTracks[i].bb.height)>=0.1 || area/ (finalTracks[j].bb.width*finalTracks[j].bb.height)>=0.1)
 			{
 				int removedIndex;
 				if(finalTracks[j].ntracked> finalTracks[i].ntracked)
@@ -264,7 +286,7 @@ trackedRectangle *dataAssociate::bindTrackingDetection(trackedRectangle *dets, i
 				else
 					removedIndex=j;
 				
-				if(finalTracks[removedIndex].ntracked<20)
+				if(!finalTracks[removedIndex].trackReady)//Because there might be overlap because of two objects passing by each other
 				{
 					finalTracks[removedIndex].neglected= true;
 				}

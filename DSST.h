@@ -27,10 +27,13 @@ using namespace cv;
 class DSSTTracker
 {
 	Params tParams;
-	trackingSetup tSetup;
 	HOGParams hParams;
 
 public:
+	trackingSetup tSetup;
+
+	DSSTTracker();
+	//~DSSTTracker();
 	cv::Mat inverseFourier(cv::Mat original, int flag=0);
 	cv::Mat createFourier(cv::Mat original, int flag=0);
 	Mat hann(int size);

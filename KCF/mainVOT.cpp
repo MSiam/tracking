@@ -64,18 +64,18 @@ GT *readGroundtruth(string path)
 
 void convert8To4(VOTPolygon p, Point& centroid, int& width, int& height)
 {
-	int top = round(MIN(p.y3, MIN(p.y4, MIN(p.y1, p.y2))));
-	int left = round(MIN(p.x3, MIN(p.x4, MIN(p.x1, p.x2))));
-	int bottom = round(MAX(p.y3, MAX(p.y4, MAX(p.y1, p.y2))));
-	int right = round(MAX(p.x3, MAX(p.x4, MAX(p.x1, p.x2))));
+	int top = cvRound(MIN(p.y3, MIN(p.y4, MIN(p.y1, p.y2))));
+	int left = cvRound(MIN(p.x3, MIN(p.x4, MIN(p.x1, p.x2))));
+	int bottom = cvRound(MAX(p.y3, MAX(p.y4, MAX(p.y1, p.y2))));
+	int right = cvRound(MAX(p.x3, MAX(p.x4, MAX(p.x1, p.x2))));
 
-	double x = round((p.x3 + p.x4 + p.x1 + p.x2) / 4) - 1;
-	double y = round((p.y3 + p.y4 + p.y1 + p.y2) / 4.0) - 1;
+	double x = cvRound((p.x3 + p.x4 + p.x1 + p.x2) / 4) - 1;
+	double y = cvRound((p.y3 + p.y4 + p.y1 + p.y2) / 4.0) - 1;
 	double A1 = sqrt(pow(p.x1 - p.x2, 2) + pow(p.y1 - p.y2, 2)) * sqrt(pow(p.x2 - p.x3, 2) + pow(p.y2 - p.y3, 2));
 	double A2 = (right - left) * (bottom - top);
 	double s = sqrt(A1 / A2);
-	width = round(s * (right - left) + 1);
-	height = round(s * (bottom - top) + 1);
+	width = cvRound(s * (right - left) + 1);
+	height = cvRound(s * (bottom - top) + 1);
 
 	centroid = Point(x, y);
 }
@@ -132,45 +132,44 @@ void generateFiles(string dataset, int begin, int end, int count)
 	images.close();
 }
 
-
 int main(int argc, char **argv)
 {
 	cv::Mat initFrame;
 
-	string working_directory = "D://Scene_DS//VIVID//";
-	string datasetNames[] = { "egtest01//", "egtest02//", "egtest03//", "egtest04//", "egtest05//","redteam//" };
+	string working_directory="C://Users//mincosy//Desktop//Aerial Tracking//datasets//";
+	string datasetNames[]= {"egtest01//", "egtest02//", "egtest03//","egtest04//","egtest05//","redteam//"};
 	int nFrames[] = { 1820, 1300, 2570, 1832, 1763, 1917 };
-	int currentDS = 1;
+	int currentDS = 0;
 	string initFile = working_directory + datasetNames[currentDS] + "InitMulti.txt";
-
+	
 	std::vector<target> targets;
 	ifstream fin(initFile.c_str());
 	int ntargets, firstFrame;
 	int x, y, w, h;
-	while (!fin.eof())
+	while(!fin.eof())
 	{
-		fin >> firstFrame >> ntargets;
-		for (int j = 0; j < ntargets; j++)
+		fin>>firstFrame>>ntargets;
+		for(int j=0; j<ntargets; j++)
 		{
-			fin >> x >> y >> w >> h;
-			target t(x, y, w, h, firstFrame);
+			fin>>x>>y>>w>>h;
+			target t(x, y, w, h,firstFrame);
 			targets.push_back(t);
 		}
 	}
 	fin.close();
 	
-	int currentTarget = 0;
-	ofstream fout("region.txt");
-	fout << targets[currentTarget].init.x << "," << targets[currentTarget].init.y << "," << targets[currentTarget].init.x + targets[currentTarget].init.width << "," << targets[currentTarget].init.y << ",";
-	fout << targets[currentTarget].init.x + targets[currentTarget].init.width << "," << targets[currentTarget].init.y + targets[currentTarget].init.height << "," << targets[currentTarget].init.x << "," << targets[currentTarget].init.y + targets[currentTarget].init.height << endl;
-	fout.close();
-
+	int currentTarget= 3;
+	/*ofstream fout("region.txt");
+	fout<<targets[currentTarget].init.x<<","<<targets[currentTarget].init.y<<","<<targets[currentTarget].init.x+targets[currentTarget].init.width<<","<<targets[currentTarget].init.y<<",";
+	fout<<targets[currentTarget].init.x+targets[currentTarget].init.width<<","<<targets[currentTarget].init.y+targets[currentTarget].init.height<<","<<targets[currentTarget].init.x<<","<<targets[currentTarget].init.y+targets[currentTarget].init.height<<endl;
+    fout.close();
+	*/
 	//load region, images and prepare for output
-	generateFiles(working_directory + datasetNames[currentDS] + "frame", targets[currentTarget].firstFrame, nFrames[currentDS], 5);
-
-	//generateFiles("/media/New Volume/Scene_DS/VOT/fernando/");
-	VOT vot_io("region.txt", "images.txt", "output.txt");
-	VOTPolygon p = vot_io.getInitPolygon();
+	//generateFiles(working_directory + datasetNames[currentDS] + "frame", targets[currentTarget].firstFrame, nFrames[currentDS], 5);
+	
+    cout<<"generated files"<<endl;
+	VOT vot_io("region.txt", "images.txt", "output.txt");   
+    VOTPolygon p = vot_io.getInitPolygon();
 
 	Point centroid;
 	w, h;
@@ -223,7 +222,7 @@ int main(int argc, char **argv)
 		imshow("", displayImg);
 		waitKey(1);
 
-		VOTPolygon result;
+		/*VOTPolygon result;
 
 		result.x1 = rect.x;
 		result.y1 = rect.y;
@@ -235,7 +234,7 @@ int main(int argc, char **argv)
 		result.y4 = rect.y + rect.height;
 
 		vot_io.outputPolygon(result);
-
+		*/
 	}
 
 }

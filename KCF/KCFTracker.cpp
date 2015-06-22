@@ -34,6 +34,10 @@ static inline float max(float x, float y)
 	return (x <= y ? y : x);
 }
 
+static inline double round(double num)
+{
+     return (num > 0.0) ? floor(num + 0.5) : ceil(num - 0.5);
+}
 static inline int min(int x, int y)
 {
 	return (x <= y ? x : y);
@@ -374,7 +378,6 @@ double *convertTo1DFloatArrayDouble(Mat &patch)
 
 Mat *KCFTracker::createFeatureMap2(Mat& patch, int &nChns, bool isScaling)
 {
-
 	int h = patch.rows, w = patch.cols;
 
 	int binSize = isScaling ? hParams.scaleBinSize : hParams.binSize;
@@ -382,33 +385,28 @@ Mat *KCFTracker::createFeatureMap2(Mat& patch, int &nChns, bool isScaling)
 	int wb = w / binSize;
 
 	Mat padPatch = patch;
-/*
-       int totalHPad = ceil((patch.rows/binSize + 1.5) * binSize) - patch.rows;
-       int bottom = totalHPad/2;
-       int top = totalHPad - bottom;
-       
-       int totalWPad =ceil((patch.cols/binSize + 1.5) * binSize) - patch.cols;
-       int right = totalWPad / 2;
-       int left = totalWPad - right;
-	   */
-	int totalHPad = binSize + 2 - (patch.rows % binSize);
-	int top = totalHPad / 2;
-	int bottom = totalHPad - top;
 
-	int totalWPad = binSize + 2 - (patch.cols % binSize);
+	int totalHPad = ceil(patch.rows/binSize + 1.5) * binSize - patch.rows;
+	int top = totalHPad/2;
+	int bottom = totalHPad - top;
+	
+	int totalWPad = ceil(patch.cols/binSize + 1.5) * binSize - patch.cols;
 	int left = totalWPad / 2;
 	int right = totalWPad - left;
+	
 	//cout << "TopBottom " << top << "  " << bottom << "  LeftRight "<<left<<"  "<<right<<endl;
 	copyMakeBorder(patch, padPatch, top, bottom, left, right, BORDER_REPLICATE);
-	//cout << "new Size" << padPatch.size() << endl;
+	//cout<<patch.size() << "new Size" << padPatch.size() << endl;
 	double* imgD = convertTo1DFloatArrayDouble(padPatch);
-	int dims[] =
-	{ padPatch.rows, padPatch.cols };
-	hb = (int) round((double) dims[0] / (double) binSize) - 2;
-	wb = (int) round((double) dims[1] / (double) binSize) - 2;
+	int dims[] ={ padPatch.rows, padPatch.cols };
+	
+	//hb = (int) round((double) dims[0] / (double) binSize) - 2;
+	//wb = (int) round((double) dims[1] / (double) binSize) - 2;
+	
 	//cout << "henaaa " << wb << "   " << hb << endl;
-	//cout << tSetup.trans_cos_win.size() << endl;
-	float* H = fhog(imgD, dims, 4);
+	//cout << "Cosine window "<<tSetup.trans_cos_win.size() << endl;
+	
+	float* H = fhog(imgD, dims, binSize);
 	/*imshow("patch", patch);
 	 imshow("patchPad", padPatch);
 	 waitKey();*/
@@ -435,6 +433,7 @@ Mat *KCFTracker::createFeatureMap2(Mat& patch, int &nChns, bool isScaling)
 	return featureMap;
 
 }
+
 Mat *KCFTracker::createFeatureMap(Mat& patch, int &nChns, bool isScaling)
 {
 
@@ -614,7 +613,11 @@ void KCFTracker::train(Mat img, bool first)
 	int nChns;
 	Mat* feature_map;
 	double transFeatureMap;
-	timeOfBlock( feature_map = createFeatureMap(roi, nChns);, transFeatureMap);
+	#ifdef SSE
+		timeOfBlock( feature_map = createFeatureMap(roi, nChns);, transFeatureMap);
+	#else
+		timeOfBlock( feature_map = createFeatureMap2(roi, nChns);, transFeatureMap);
+	#endif
 	trainTime += transFeatureMap;
 
 	Mat *feature_map_fourier;
@@ -825,8 +828,11 @@ Mat KCFTracker::get_scale_sample(Mat img, int &nDims, bool display)
 		}
 		//Extract Features
 		int nChns;
-		Mat *featureMap = createFeatureMap(roiResized, nChns, true);
-
+		#ifdef SSE
+			Mat *featureMap = createFeatureMap(roiResized, nChns, true);
+		#else
+			Mat *featureMap = createFeatureMap2(roiResized, nChns, true);
+		#endif
 		float s = tSetup.scale_cos_win.at<double>(i, 0);
 
 		//Multiply by scale window + Save it as 1D array in the big array
@@ -876,7 +882,7 @@ void KCFTracker::preprocess(Mat imgOrig, Point centroid, int w, int h)
 	////////////////Localization Parameters/////////////////
 
 	//output_sigma = sqrt(prod(target_sz)) * output_sigma_factor / cell_size;
-	double output_sigma = sqrt(tSetup.original.width * tSetup.original.height) * tParams.output_sigma_factor / hParams.binSize;
+	double output_sigma = sqrt((double)tSetup.original.width * tSetup.original.height) * tParams.output_sigma_factor / hParams.binSize;
 
 	int sz_w = tSetup.padded.width / hParams.binSize;
 	int sz_h = tSetup.padded.height / hParams.binSize;
@@ -910,7 +916,7 @@ void KCFTracker::preprocess(Mat imgOrig, Point centroid, int w, int h)
 	timeOfBlock( if (tParams.enableScaling) {
 	//B- Create Scale Gaussian Filters
 
-	double scaleSigma = tParams.number_scales / sqrt(tParams.number_scales) * tParams.scale_sigma_factor; cv::Mat scaleFilter(1, tParams.number_scales, CV_64FC1); for (int r = -tParams.number_scales / 2; r < ceil((double) tParams.number_scales / 2); r++) scaleFilter.at<double>(0, r + tParams.number_scales / 2) = exp(-0.5 * ((double) (r * r) / (scaleSigma * scaleSigma))); createFourier(scaleFilter, tSetup.scaleFourier);
+	double scaleSigma = tParams.number_scales / sqrt((double)tParams.number_scales) * tParams.scale_sigma_factor; cv::Mat scaleFilter(1, tParams.number_scales, CV_64FC1); for (int r = -tParams.number_scales / 2; r < ceil((double) tParams.number_scales / 2); r++) scaleFilter.at<double>(0, r + tParams.number_scales / 2) = exp(-0.5 * ((double) (r * r) / (scaleSigma * scaleSigma))); createFourier(scaleFilter, tSetup.scaleFourier);
 
 	cv::Mat scale_cosine_win(tParams.number_scales, 1, CV_64FC1); hann(tParams.number_scales, tSetup.scale_cos_win);
 
@@ -975,7 +981,11 @@ Rect KCFTracker::processFrame(cv::Mat imgOrig)
 	int nChns;
 	Mat* feature_map;
 	double getFeatureMap;
-	timeOfBlock(feature_map = createFeatureMap(roi, nChns) ;, getFeatureMap);
+	#ifdef SSE
+		timeOfBlock(feature_map = createFeatureMap(roi, nChns) ;, getFeatureMap);
+	#else
+		timeOfBlock(feature_map = createFeatureMap2(roi, nChns) ;, getFeatureMap);
+	#endif
 	totTime += getFeatureMap;
 
 	Mat *feature_map_fourier = new Mat[nChns];

@@ -13,6 +13,7 @@
 #include "HOG.h"
 #include "vot.hpp"
 #include <windows.h>
+ #include <time.h>
 
 using namespace std;
 using namespace cv;
@@ -674,14 +675,22 @@ public:
 
 		int hb, wb, nChns;
 		
+		
+		/*clock_t start, end;
+		double elapsed;
+		start = clock();
+		*/
 		#ifdef SSE
 			Mat *featureMap= create_feature_map(roi,1, nChns, roiGrayFlot, false);
 		#else
 			Mat *featureMap= create_feature_map2(roi,1, nChns, roiGrayFlot, false);
 		#endif
 
+		/*end = clock();
+		elapsed = ((double) (end - start)) / CLOCKS_PER_SEC;
+		std::cout<<elapsed;
+		*/
 		nDims= nChns;
-	
 		//waitKey();
 		for(int i=0; i<nChns; i++)
 			featureMap[i] = featureMap[i].mul(tSetup.trans_cos_win);
@@ -1222,14 +1231,15 @@ int main()
 	fin.close();
 	
 	int currentTarget= 3;
-	ofstream fout("region.txt");
+	/*ofstream fout("region.txt");
 	fout<<targets[currentTarget].init.x<<","<<targets[currentTarget].init.y<<","<<targets[currentTarget].init.x+targets[currentTarget].init.width<<","<<targets[currentTarget].init.y<<",";
 	fout<<targets[currentTarget].init.x+targets[currentTarget].init.width<<","<<targets[currentTarget].init.y+targets[currentTarget].init.height<<","<<targets[currentTarget].init.x<<","<<targets[currentTarget].init.y+targets[currentTarget].init.height<<endl;
     fout.close();
-
+	*/
 	//load region, images and prepare for output
 	DSSTTracker dsst;	
-	dsst.generateFiles(working_directory + datasetNames[currentDS] + "frame", targets[currentTarget].firstFrame, nFrames[currentDS], 5);
+	//dsst.generateFiles(working_directory + datasetNames[currentDS] + "frame", targets[currentTarget].firstFrame, nFrames[currentDS], 5);
+	
     cout<<"generated files"<<endl;
 	VOT vot_io("region.txt", "images.txt", "output.txt");   
     VOTPolygon p = vot_io.getInitPolygon();

@@ -812,6 +812,8 @@ cv::Rect DSSTTracker::processFrame(cv::Mat img)
 DSSTTracker::DSSTTracker()
 {
 	tSetup.num_trans=0;
+	tSetup.enableScaling= false;
+	tSetup.num_scale=0;
 }
 void DSSTTracker::preprocess(int rows,int cols, cv::Mat img, cv::Rect bb)
 {

@@ -27,7 +27,7 @@ string intToStr(int i, string path ,int sz , string post){
 
 int main(int argc, char *argv[])
 {
-	int currentDS= 1;
+	int currentDS= 5;
 	string datasets[] = {"egtest01", "egtest02", "egtest03", "egtest04", "egtest05", "redTeam"};
 	int frames[] = {1802, 1300, 2570, 1832, 1763, 1917};
 	string path= "C:\\Users\\mincosy\\Desktop\\Aerial Tracking\\datasets\\"+datasets[currentDS]+"\\";
@@ -59,11 +59,8 @@ int main(int argc, char *argv[])
 			}
 			else
 			{
-				//cout<<"here 2"<<endl;
 				mc.processFrame(frame, previousFrame);
-				//cout<<"here"<<endl;
 				finalRects= da.bindTrackingDetection(mc.rects, mc.nrects, finalRects, nfinalRects, frame);
-				//cout<<"here 3"<<endl;
 			}
 			/*Mat frame3= frame.clone();
 			stringstream ss;

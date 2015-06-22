@@ -8,6 +8,8 @@
 #include "motionCompensation.h"
 
 #define MAXCORNERS 100000
+#define minSize 5
+#define maxSize 100
 
 void motionCompensation::processFrame(cv::Mat frame, cv::Mat previousFrame)
 {
@@ -23,18 +25,22 @@ void motionCompensation::processFrame(cv::Mat frame, cv::Mat previousFrame)
 			rects[i].neglected= true;
 		if(rects[i].bb.height+ rects[i].bb.y+20> frame.rows)
 			rects[i].neglected= true;
-		if(rects[i].bb.width<5 || rects[i].bb.height<5)
+		if(rects[i].bb.x<5 || rects[i].bb.y<5)
+			rects[i].neglected= true;
+		if(rects[i].bb.width<minSize || rects[i].bb.height<minSize)
 			rects[i].neglected= true;
 	}
 
+	//Mat frameC= frame.clone();
 	for(int i=0; i<nrects; i++)
 	{
 		if(rects[i].neglected)
 			continue;
 		
-		//rectangle(frame, Point2f(rects[i].bb.x, rects[i].bb.y), Point2f(rects[i].bb.x+rects[i].bb.width, rects[i].bb.y+rects[i].bb.height),Scalar(0,0,255) );
+		//rectangle(frameC, Point2f(rects[i].bb.x, rects[i].bb.y), Point2f(rects[i].bb.x+rects[i].bb.width, rects[i].bb.y+rects[i].bb.height),Scalar(0,0,255) );
 	}
-	//imshow("Objects ", frame);
+	//imshow("Objects ", frameC);
+	//waitKey();
 }
 
 vector<Point2f> motionCompensation::detectCorners(cv::Mat frame)
@@ -71,16 +77,18 @@ vector<Point2f> motionCompensation::computeHomography(cv::Mat frame, cv::Mat pre
 	
 	//3- Compute Homography 
 	vector<uchar> mask;
-	Mat H= findHomography(previousCorners, corners, CV_RANSAC, 0.7, mask);
+	Mat H= findHomography(previousCorners, corners, CV_LMEDS, 0.7, mask);
 	vector<Point2f> outliers;
+	//Mat frameC= frame.clone();
 	for(int i=0; i<corners.size(); i++)
 	{
 		if(mask[i]==0)
 		{
 			outliers.push_back(corners[i]);
-			//circle( frame, Point( corners[i].x, corners[i].y ), 1,  Scalar(0, 0, 255), 2, 8, 0 );
+			
+			//circle( frameC, Point( corners[i].x, corners[i].y ), 1,  Scalar(0, 0, 255), 2, 8, 0 );
 		}
 	}
-	//imshow("Outliers", frame);
+	//imshow("Outliers", frameC);
 	return outliers;
 }

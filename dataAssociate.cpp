@@ -227,17 +227,20 @@ trackedRectangle *dataAssociate::bindTrackingDetection(trackedRectangle *dets, i
 		}
 	}
 	
-	
 	//delete[] found;
 	//cout<<"Deleting"<<endl;
 	for(int i=0; i<ntracks; i++)
 	{
 		if(tracks[i].neglected)
 		{
-			delete[] tracks[i].trObj.tSetup.num_trans;
-	
-			if (tracks[i].trObj.tSetup.enableScaling)
+			
+			if(tracks[i].trObj.tSetup.num_trans!= 0)
 			{
+				delete[] tracks[i].trObj.tSetup.num_trans;
+			}
+			
+			if (tracks[i].trObj.tSetup.enableScaling && tracks[i].trObj.tSetup.num_scale!=0)
+			{	
 				delete[] tracks[i].trObj.tSetup.num_scale;
 				delete[] tracks[i].trObj.tSetup.scaleFactors;
 			}

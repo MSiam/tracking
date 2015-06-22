@@ -8,13 +8,8 @@
 #define INC_HOG_H
 
 #include "wrappers.h"
-//#include "mex.h"
-//#include "matrix.h"
 #include <math.h>
 #include "string.h"
-//#include <emmintrin.h>
-//#include <iomanip>
-//#include <xmmintrin.h>
 #include "sse.hpp"
 #include<iostream>
 using namespace std;

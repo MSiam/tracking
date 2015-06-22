@@ -5,7 +5,7 @@
 *******************************************************************************/
 #ifndef _SSE_HPP_
 #define _SSE_HPP_
-#include <xmmintrin.h> // SSE2:<e*.h>, SSE3:<p*.h>, SSE4:<s*.h>
+#include <xmmintrin.h>
 #define RETf  __m128
 #define RETi  __m128i
 

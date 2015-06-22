@@ -9,7 +9,6 @@
 #include "KCFTracker.h"
 #include <iostream>
 #include "stdio.h"
-//#include "HOG.h"
 #include <fstream>
 #include <iomanip>
 #include "defines.h"
@@ -68,6 +67,7 @@ float *fhog(double *im, int* dims, int sbin)
 	out[1] = max(blocks[1] - 2, 0);
 	out[2] = 27 + 4 + 1;
 	float *feat = (float*) malloc(out[0] * out[1] * out[2] * sizeof(float));
+	//cout<<"Feat "<<out[0]<<" "<<out[1]<<endl;
 
 	int visible[2];
 	visible[0] = blocks[0] * sbin;
@@ -225,12 +225,17 @@ float *fhog(double *im, int* dims, int sbin)
 
 KCFTracker::KCFTracker()
 {
-
+	//tSetup.model_alphaf=0;
+	//tSetup.model_xf=0;
 }
 
 KCFTracker::~KCFTracker()
 {
+	/*if(tSetup.model_alphaf!=0)
+		delete[] tSetup.model_alphaf;
 
+	if(tSetup.model_xf!=0)
+		delete[] tSetup.model_xf;*/
 }
 
 Point ComputeMaxfl(Mat img)
@@ -380,7 +385,6 @@ double *convertTo1DFloatArrayDouble(Mat &patch)
 
 Mat *KCFTracker::createFeatureMap2(Mat& patch, int &nChns, bool isScaling)
 {
-
 	int h = patch.rows, w = patch.cols;
 
 	int binSize = isScaling ? hParams.scaleBinSize : hParams.binSize;
@@ -401,8 +405,7 @@ Mat *KCFTracker::createFeatureMap2(Mat& patch, int &nChns, bool isScaling)
 	copyMakeBorder(patch, padPatch, top, bottom, left, right, BORDER_REPLICATE);
 	//cout<<patch.size() << "new Size" << padPatch.size() << endl;
 	double* imgD = convertTo1DFloatArrayDouble(padPatch);
-	int dims[] =
-	{ padPatch.rows, padPatch.cols };
+	int dims[] ={ padPatch.rows, padPatch.cols };
 	
 	//hb = (int) round((double) dims[0] / (double) binSize) - 2;
 	//wb = (int) round((double) dims[1] / (double) binSize) - 2;
@@ -602,18 +605,21 @@ void KCFTracker::train(Mat img, bool first)
 	int nChns;
 	Mat* feature_map;
 	double transFeatureMap;
-	//timeOfBlock( 
-	clock_t start, end;
-    double elapsed;
-    start = clock();
-
-	feature_map = createFeatureMap2(roi, nChns);
 	
-	end = clock();
-    elapsed = ((double) (end - start)) / CLOCKS_PER_SEC;
-    std::cout<<elapsed<<endl;
+	//clock_t start, end;
+    //double elapsed;
+    //start = clock();
 
-	//, transFeatureMap);
+	#ifdef SSE
+		timeOfBlock( feature_map = createFeatureMap(roi, nChns);,transFeatureMap);
+	#else
+		timeOfBlock( feature_map = createFeatureMap2(roi, nChns);, transFeatureMap);
+	#endif
+
+	//end = clock();
+    //elapsed = ((double) (end - start)) / CLOCKS_PER_SEC;
+    //std::cout<<elapsed<<endl;
+	
 	trainTime += transFeatureMap;
 
 	Mat *feature_map_fourier;
@@ -824,8 +830,11 @@ Mat KCFTracker::get_scale_sample(Mat img, int &nDims, bool display)
 		}
 		//Extract Features
 		int nChns;
-		Mat *featureMap = createFeatureMap2(roiResized, nChns, true);
-
+		#ifdef SSE
+			Mat *featureMap = createFeatureMap(roiResized, nChns, true);
+		#else
+			Mat *featureMap = createFeatureMap2(roiResized, nChns, true);
+		#endif
 		float s = tSetup.scale_cos_win.at<double>(i, 0);
 
 		//Multiply by scale window + Save it as 1D array in the big array
@@ -976,9 +985,11 @@ Rect KCFTracker::processFrame(cv::Mat imgOrig)
 	int nChns;
 	Mat* feature_map;
 	double getFeatureMap;
-	//timeOfBlock(
-	feature_map = createFeatureMap2(roi, nChns) ;
-	//, getFeatureMap);
+	#ifdef SSE
+		timeOfBlock(feature_map = createFeatureMap(roi, nChns) ;, getFeatureMap);
+	#else
+		timeOfBlock(feature_map = createFeatureMap2(roi, nChns) ;, getFeatureMap);
+	#endif
 	totTime += getFeatureMap;
 
 	Mat *feature_map_fourier = new Mat[nChns];

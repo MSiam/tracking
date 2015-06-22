@@ -1,3 +1,10 @@
+/*
+ * dataAssociate.cpp
+ *
+ *  Created on: 22 May, 2015
+ *      Author: Mennatullah
+ */
+
 #include "dataAssociate.h"
 
 bool dataAssociate::checkBoundary(Mat frame, Rect track)
@@ -29,8 +36,11 @@ trackedRectangle *dataAssociate::initTracking(trackedRectangle *rects, Mat frame
 			//1- Create Kalman Object
 			//rects[i].kalman= initKalman(Point2f(rects[i].bb.x+rects[i].bb.width/2, rects[i].bb.y+rects[i].bb.height/2), dt);
 			//cout<<"Init tracking "<<i<<endl;
-			rects[i].trObj.preprocess(frame, Point(rects[i].bb.x+rects[i].bb.width/2,rects[i].bb.y+rects[i].bb.height/2), rects[i].bb.width, rects[i].bb.height );
-			//rects[i].trObj.preprocess(frame.rows, frame.cols, frame, rects[i].bb);
+			#ifdef KCF
+				rects[i].trObj.preprocess(frame, Point(rects[i].bb.x+rects[i].bb.width/2,rects[i].bb.y+rects[i].bb.height/2), rects[i].bb.width, rects[i].bb.height );
+			#else
+				rects[i].trObj.preprocess(frame.rows, frame.cols, frame, rects[i].bb);
+			#endif
 			rects[i].first= false;
 		}
 	}
@@ -136,6 +146,7 @@ trackedRectangle *dataAssociate::bindTrackingDetection(trackedRectangle *dets, i
 					if(finalTracks[i].ntracked>2 && !finalTracks[i].trackReady)
 					{
 						finalTracks[i].trackID= globalIDCounter;
+						
 						globalIDCounter++;
 						finalTracks[i].trackReady= true;
 					}
@@ -178,8 +189,12 @@ trackedRectangle *dataAssociate::bindTrackingDetection(trackedRectangle *dets, i
 		{
 			finalTracks[nfinalTracks]= dets[j];
 			Rect r= finalTracks[nfinalTracks].bb;
-			finalTracks[nfinalTracks].trObj.preprocess(frame, Point(r.x+r.width/2, r.y+r.height/2), r.width, r.height );
-			//finalTracks[nfinalTracks].trObj.preprocess(frame.rows, frame.cols, frame, r);
+			#ifdef KCF
+				finalTracks[nfinalTracks].trObj.preprocess(frame, Point(r.x+r.width/2, r.y+r.height/2), r.width, r.height );
+			#else
+				finalTracks[nfinalTracks].trObj.preprocess(frame.rows, frame.cols, frame, r);
+			#endif
+
 			finalTracks[nfinalTracks].first= false;
 			nfinalTracks++;
 		}

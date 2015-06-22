@@ -1,3 +1,9 @@
+/*
+ * motionCompensation.h
+ *
+ *  Created on: 22 May, 2015
+ *      Author: Mennatullah
+ */
 #ifndef MComp_H
 #define MComp_H
 

@@ -1,3 +1,10 @@
+/*
+ * main.h
+ * Multiple Target Deetection and Tracking Test
+ *  Created on: 22 May, 2015
+ *      Author: Mennatullah
+ */
+
 #include <iostream>
 #include <string>
 #include "motionCompensation.h"
@@ -83,7 +90,7 @@ int main(int argc, char *argv[])
 			imshow("tracks", frame2);
 		}
 		
-		waitKey();
+		waitKey(10);
 		previousFrame= frame;
 		frameNumber++;
 	}

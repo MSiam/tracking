@@ -1,3 +1,10 @@
+/*
+ * Clusters.cpp
+ *
+ *  
+ *      Source: DBScan Clustering Implementation
+ */
+
 #include "clusters.h"
 #include <boost/foreach.hpp>
 

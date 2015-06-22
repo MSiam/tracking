@@ -1,3 +1,10 @@
+/*
+ * Clusterer.cpp
+ *
+ *  Created on: 22 May, 2015
+ *      Author: Mennatullah
+ */
+
 #include "Clusterer.h"
 
 trackedRectangle *Clusterer::dbScanClustering(int &nrects, int w, int h)

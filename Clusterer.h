@@ -1,3 +1,10 @@
+/*
+ * Clusterer.h
+ *
+ *  Created on: 22 May, 2015
+ *      Author: Mennatullah
+ */
+
 #ifndef INC_Clustrer_H
 #define INC_Clustrer_H
 
@@ -9,7 +16,7 @@
 #include "dbscan.h"
 #include "distance.h"
 #include "KCFTracker.h"
-//#include "DSST.h"
+#include "DSST.h"
 using namespace std;
 using namespace cv;
 
@@ -26,8 +33,11 @@ public:
 	int flag;
 	
 	KalmanFilter kalman;
+#ifdef KCF
 	KCFTracker trObj;
-	//DSSTTracker trObj;
+#else
+	DSSTTracker trObj;
+#endif
 };
 
 class Clusterer

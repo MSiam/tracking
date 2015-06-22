@@ -1,6 +1,12 @@
+/*
+ * Clusters.h
+ *
+ *  
+ *      Source: DBScan Clustering Implementation
+ */
+
 #ifndef INC_Clustrs_H
 #define INC_Clustrs_H
-
 
 #include <vector>
 #include <cmath>

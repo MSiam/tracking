@@ -1,3 +1,10 @@
+/*
+ * motionCompensation.cpp
+ *
+ *  Created on: 22 May, 2015
+ *      Author: Mennatullah
+ */
+
 #include "motionCompensation.h"
 
 #define MAXCORNERS 100000

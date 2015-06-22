@@ -1,3 +1,10 @@
+/*
+ * dataAssociate.h
+ *
+ *  Created on: 22 May, 2015
+ *      Author: Mennatullah
+ */
+
 #ifndef INC_ASSOC_H
 #define INC_ASSOC_H
 

@@ -12,7 +12,7 @@
 #include "Params.h"
 #include "HOG.h"
 #include "vot.hpp"
-#include <windows.h>
+//#include <windows.h>
 #include <time.h>
 //#include <chrono>
 
@@ -25,9 +25,26 @@ using namespace cv;
 static double uu[9] = { 1.0000, 0.9397, 0.7660, 0.500, 0.1736, -0.1736, -0.5000, -0.7660, -0.9397 }; 
 static double vv[9] = { 0.0000, 0.3420, 0.6428, 0.8660, 0.9848, 0.9848, 0.8660, 0.6428, 0.3420 };
 
-static inline double round(double num)
+static inline float min(float x, float y)
+{
+	return (x <= y ? x : y);
+}
+static inline float max(float x, float y)
+{
+	return (x <= y ? y : x);
+}
+
+/*static inline double round(double num)
 {
      return (num > 0.0) ? floor(num + 0.5) : ceil(num - 0.5);
+}*/
+static inline int min(int x, int y)
+{
+	return (x <= y ? x : y);
+}
+static inline int max(int x, int y)
+{
+	return (x <= y ? y : x);
 }
 
 class DSSTTracker
@@ -130,7 +147,6 @@ public:
 
 		return img;
 	}
-
 	Mat convert2DImage(float *arr, int w, int h)
 	{
 		int k=0;
@@ -180,13 +196,24 @@ public:
 	double *convertTo1DFloatArrayDouble(Mat &patch)
 	{
 	
-		double *img = (double*) calloc(patch.rows * patch.cols, sizeof(double));
+		double *img = (double*) calloc(patch.rows * patch.cols*3, sizeof(double));
 
-		int k = 0;
+		int k=0;
+		for(int i=0; i<patch.cols; i++)
+			for(int j=0; j<patch.rows; j++)
+			{
+				cv::Vec3b vc= patch.at<cv::Vec3b>(j, i);
+				img[k]= (double)vc[2];
+				img[k+patch.cols*patch.rows]= (double)vc[1];
+				img[k+patch.cols*patch.rows*2]= (double)vc[0];
+
+				k++;
+			}
+		/*int k = 0;
 		for (int i = 0; i < patch.cols; i++)
 			for (int j = 0; j < patch.rows; j++)
 				img[k++] = (double) patch.at<unsigned char>(j, i) / 255.0;
-
+		*/
 		/*
 		 imshow("", patch);
 		 waitKey();
@@ -576,9 +603,11 @@ public:
 			int nChns;
 			double t = (double)getTickCount(); 
 			#ifdef SSE
-				Mat *featureMap= create_feature_map(roiResized,1, nChns, Mat(), true);
+				Mat m= Mat();
+				Mat *featureMap= create_feature_map(roiResized,1, nChns, m, true);
 			#else
-				Mat *featureMap= create_feature_map2(roiResized,1, nChns, Mat(), true);
+				Mat m= Mat();
+				Mat *featureMap= create_feature_map2(roiResized,1, nChns, m, true);
 			#endif
 			t = ((double)getTickCount() - t)/getTickFrequency(); 
 			std::cout << "Times passed in seconds: " << t << std::endl;
@@ -1215,16 +1244,18 @@ int main()
 {
 	cv::Mat initFrame;
 
-	string working_directory="C://Users//mincosy//Desktop//Aerial Tracking//datasets//";
-	string datasetNames[]= {"egtest01//", "egtest02//", "egtest03//","egtest04//","egtest05//","redteam//"};
+	string working_directory="/home/mennatullah/Datasets/Eglin/";
+	string datasetNames[]= {"egtest01/", "egtest02/", "egtest03/","egtest04/","egtest05/","redteam/"};
 	int nFrames[] = { 1820, 1300, 2570, 1832, 1763, 1917 };
 	int currentDS = 0;
 	string initFile = working_directory + datasetNames[currentDS] + "InitMulti.txt";
-	
 	std::vector<target> targets;
 	ifstream fin(initFile.c_str());
+
 	int ntargets, firstFrame;
 	int x, y, w, h;
+
+	char *line= new char[100];
 	while(!fin.eof())
 	{
 		fin>>firstFrame>>ntargets;
@@ -1236,21 +1267,21 @@ int main()
 		}
 	}
 	fin.close();
-	
+
 	int currentTarget= 3;
 	/*ofstream fout("region.txt");
 	fout<<targets[currentTarget].init.x<<","<<targets[currentTarget].init.y<<","<<targets[currentTarget].init.x+targets[currentTarget].init.width<<","<<targets[currentTarget].init.y<<",";
 	fout<<targets[currentTarget].init.x+targets[currentTarget].init.width<<","<<targets[currentTarget].init.y+targets[currentTarget].init.height<<","<<targets[currentTarget].init.x<<","<<targets[currentTarget].init.y+targets[currentTarget].init.height<<endl;
     fout.close();
-	*/
+    */
 	//load region, images and prepare for output
 	DSSTTracker dsst;	
 	//dsst.generateFiles(working_directory + datasetNames[currentDS] + "frame", targets[currentTarget].firstFrame, nFrames[currentDS], 5);
 	
     cout<<"generated files"<<endl;
-	VOT vot_io("region.txt", "images.txt", "output.txt");   
+	VOT vot_io("region.txt", "images.txt", "output.txt");
     VOTPolygon p = vot_io.getInitPolygon();
-	
+
     int top = cvRound(MIN(p.y1, MIN(p.y2, MIN(p.y3, p.y4))));
     int left = cvRound(MIN(p.x1, MIN(p.x2, MIN(p.x3, p.x4))));
     int bottom = cvRound(MAX(p.y1, MAX(p.y2, MAX(p.y3, p.y4))));
@@ -1258,10 +1289,9 @@ int main()
     
 	vot_io.getNextImage(initFrame);//, true);
 	
-	
 	dsst.preprocess(initFrame.rows,initFrame.cols, initFrame, left, top, right, bottom, p);
 	vot_io.outputPolygon(p);
-
+	cout<<"here 2"<<endl;
 	int frameNumber=1; 
     while (true)
 	{
@@ -1271,7 +1301,7 @@ int main()
 		
 		if(nextFrame!=1 || !currentFrame.data)
 			break;
-		freopen("timeSSE.txt", "wt", stdout);
+		//freopen("timeSSE.txt", "wt", stdout);
 
 		cv::Rect rect= dsst.processFrame(currentFrame, false);
 		
@@ -1283,7 +1313,7 @@ int main()
 		/*if (frameNumber >= 1101)
 			waitKey(1000);
 		else*/
-			waitKey();
+			waitKey(1);
 		
         /*VOTPolygon result;
 

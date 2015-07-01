@@ -9,7 +9,7 @@
 #include <string>
 #include "motionCompensation.h"
 #include "dataAssociate.h"
-#include "tracker.h"
+//#include "tracker.h"
 using namespace std;
 
 string intToStr(int i, string path ,int sz , string post){
@@ -27,15 +27,15 @@ string intToStr(int i, string path ,int sz , string post){
 
 int main(int argc, char *argv[])
 {
-	int currentDS= 5;
+	int currentDS= 0;
 	string datasets[] = {"egtest01", "egtest02", "egtest03", "egtest04", "egtest05", "redTeam"};
 	int frames[] = {1802, 1300, 2570, 1832, 1763, 1917};
-	string path= "C:\\Users\\mincosy\\Desktop\\Aerial Tracking\\datasets\\"+datasets[currentDS]+"\\";
+	string path= "/home/mennatullah/Datasets/Eglin/"+datasets[currentDS]+"/";
 	int frameNumber=0;
 	
 	motionCompensation mc;
 	dataAssociate da;
-	KalmanTracking tr;
+	//KalmanTracking tr;
 	cv::Mat frame, previousFrame;
 	trackedRectangle *finalRects;
 	int nfinalRects;

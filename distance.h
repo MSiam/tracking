@@ -14,13 +14,12 @@ namespace Metrics{
 
 	//  
 	// Euclidean distance
-	template 
-	<typename VEC_T>	
+	template <typename VEC_T>
 	class Euclidean {
 	
 	protected:                  
 
-		typedef typename VEC_T vector_type;
+		typedef VEC_T vector_type;
 
 		// this must be not directly accessible 
 		// since we want to provide a rich set of distances	
@@ -41,7 +40,7 @@ namespace Metrics{
 	
 	protected:                  
 
-		typedef typename VEC_T vector_type;
+		typedef VEC_T vector_type;
 
 								// this must be not directly accessible 
 								// since we want to provide a rich set of distances	
@@ -65,6 +64,7 @@ namespace Metrics{
 	class Distance : Distance_Policy
 	{
 		using Distance_Policy::getDistance;
+		using Distance_Policy::getSimilarity;
 
 	public:
 		double distance(typename Distance_Policy::vector_type x, typename Distance_Policy::vector_type y)

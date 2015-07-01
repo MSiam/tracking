@@ -13,9 +13,30 @@
 static double uu[9] = { 1.0000, 0.9397, 0.7660, 0.500, 0.1736, -0.1736, -0.5000, -0.7660, -0.9397 }; 
 static double vv[9] = { 0.0000, 0.3420, 0.6428, 0.8660, 0.9848, 0.9848, 0.8660, 0.6428, 0.3420 };
 
-static inline double round(double num)
+/*static inline double round(double num)
 {
      return (num > 0.0) ? floor(num + 0.5) : ceil(num - 0.5);
+}*/
+static inline float min(float x, float y)
+{
+	return (x <= y ? x : y);
+}
+static inline float max(float x, float y)
+{
+	return (x <= y ? y : x);
+}
+
+/*static inline double round(double num)
+{
+     return (num > 0.0) ? floor(num + 0.5) : ceil(num - 0.5);
+}*/
+static inline int min(int x, int y)
+{
+	return (x <= y ? x : y);
+}
+static inline int max(int x, int y)
+{
+	return (x <= y ? y : x);
 }
 
 cv::Mat DSSTTracker::inverseFourier(cv::Mat original, int flag)
@@ -160,12 +181,19 @@ Mat *DSSTTracker::create_feature_map(Mat& patch, int full, int &nChns, Mat& Gray
 double *DSSTTracker::convertTo1DFloatArrayDouble(Mat &patch)
 {
 	
-	double *img = (double*) calloc(patch.rows * patch.cols, sizeof(double));
+	double *img = (double*) calloc(patch.rows * patch.cols*3, sizeof(double));
 
-	int k = 0;
-	for (int i = 0; i < patch.cols; i++)
-		for (int j = 0; j < patch.rows; j++)
-			img[k++] = (double) patch.at<unsigned char>(j, i) / 255.0;
+	int k=0;
+	for(int i=0; i<patch.cols; i++)
+		for(int j=0; j<patch.rows; j++)
+		{
+			cv::Vec3b vc= patch.at<cv::Vec3b>(j, i);
+			img[k]= (double)vc[2];
+			img[k+patch.cols*patch.rows]= (double)vc[1];
+			img[k+patch.cols*patch.rows*2]= (double)vc[0];
+
+			k++;
+		}
 
 	/*
 	 imshow("", patch);
@@ -450,9 +478,11 @@ Mat DSSTTracker::get_scale_sample(Mat img, trackingSetup tSetup, Params tParams,
 		
 		int nChns;
 		#ifdef SSE	
-			Mat *featureMap= create_feature_map(roiResized,1, nChns, Mat(), true);
+			Mat m= Mat();
+			Mat *featureMap= create_feature_map(roiResized,1, nChns, m, true);
 		#else
-			Mat *featureMap= create_feature_map2(roiResized,1, nChns, Mat(), true);
+			Mat m= Mat();
+			Mat *featureMap= create_feature_map2(roiResized,1, nChns, m, true);
 		#endif
 		
 		float s= tSetup.scale_cos_win.at<float>(i,0);

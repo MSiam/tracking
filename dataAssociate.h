@@ -9,7 +9,7 @@
 #define INC_ASSOC_H
 
 #include "Clusterer.h"
-#include "tracker.h"
+//#include "tracker.h"
 
 class dataAssociate
 {

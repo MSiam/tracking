@@ -19,7 +19,7 @@
 #include <math.h>
 #include "Params.h"
 #include "HOG.h"
-#include <windows.h>
+//#include <windows.h>
 
 using namespace std;
 using namespace cv;

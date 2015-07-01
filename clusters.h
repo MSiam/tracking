@@ -14,6 +14,7 @@
 #include <boost/numeric/ublas/matrix.hpp>
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/foreach.hpp>
+#include <stdlib.h>
 #include "distance.h"
 
 namespace Clustering{

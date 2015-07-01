@@ -32,7 +32,7 @@ public:
 	bool trackReady;
 	int flag;
 	
-	KalmanFilter kalman;
+	//KalmanFilter kalman;
 #ifdef KCF
 	KCFTracker trObj;
 #else

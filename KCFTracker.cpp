@@ -34,10 +34,10 @@ static inline float max(float x, float y)
 	return (x <= y ? y : x);
 }
 
-static inline double round(double num)
+/*static inline double round(double num)
 {
      return (num > 0.0) ? floor(num + 0.5) : ceil(num - 0.5);
-}
+}*/
 
 static inline int min(int x, int y)
 {

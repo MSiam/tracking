@@ -610,7 +610,7 @@ public:
 				Mat *featureMap= create_feature_map2(roiResized,1, nChns, m, true);
 			#endif
 			t = ((double)getTickCount() - t)/getTickFrequency(); 
-			std::cout << "Times passed in seconds: " << t << std::endl;
+			//std::cout << "Times passed in seconds: " << t << std::endl;
 
 			float s= tSetup.scale_cos_win.at<float>(i,0);
 		
@@ -720,7 +720,7 @@ public:
 			Mat *featureMap= create_feature_map2(roi,1, nChns, roiGrayFlot, false);
 		#endif
 		t = ((double)getTickCount() - t)/getTickFrequency(); 
-		std::cout << "Times passed in seconds: " << t << std::endl;
+		//td::cout << "Times passed in seconds: " << t << std::endl;
 
 		/*end = clock();
 		elapsed = ((double) (end - start)) / CLOCKS_PER_SEC;
@@ -903,6 +903,8 @@ public:
 
 	cv::Rect processFrame(cv::Mat img, bool enableScaling)
 	{
+		resize(img, img, Size(img.cols/tParams.resize_factor, img.rows/tParams.resize_factor));
+
 		//ofstream fout("C://Users//mincosy//Desktop//Tracking//Final_DSST_C++//DSST//logzebala.txt",  std::ofstream::out | std::ofstream::app);
 		//fout<<"entered process frame"<<endl;
 		int nDims = 0;
@@ -1018,9 +1020,10 @@ public:
 		tSetup.centroid = updateCentroid(tSetup.centroid,tSetup.original.width*tSetup.current_scale_factor,tSetup.original.height*tSetup.current_scale_factor,img.cols,img.rows);
 		int left = tSetup.centroid.x - (tSetup.original.width/2*tSetup.current_scale_factor) ;
 		int top = tSetup.centroid.y - (tSetup.original.height/2*tSetup.current_scale_factor);
-		cv::Rect rect(left, top, tSetup.original.width*tSetup.current_scale_factor, tSetup.original.height*tSetup.current_scale_factor);
-		//fout<<"Updated Centroid "<<tSetup.centroid.x<<" "<<tSetup.centroid.y<<" "<<rect.width<<"  "<<rect.height<<endl;
-		//fout.close();
+		//cv::Rect rect(left, top, tSetup.original.width*tSetup.current_scale_factor, tSetup.original.height*tSetup.current_scale_factor);
+		left*= tParams.resize_factor;
+		top*= tParams.resize_factor;
+		cv::Rect rect(left, top, tSetup.original.width*tSetup.current_scale_factor*tParams.resize_factor, tSetup.original.height*tSetup.current_scale_factor*tParams.resize_factor);
 
 		delete[] feature_map;
 		delete[] feature_map_fourier;
@@ -1034,19 +1037,28 @@ public:
 
 	void preprocess(int rows,int cols, cv::Mat img, int left, int top, int right, int bottom, VOTPolygon p)
 	{
-		//tSetup.centroid.x = left + (right-left)/2 - 1;
-		//tSetup.centroid.y = top + (bottom - top)/2 - 1;
-		//tSetup.original.width = right - left;
-		//tSetup.original.height = bottom - top;
+		tSetup.centroid.x = left + (right-left)/2 - 1;
+		tSetup.centroid.y = top + (bottom - top)/2 - 1;
+		tSetup.original.width = right - left;
+		tSetup.original.height = bottom - top;
 
-		tSetup.centroid.x = cvRound((p.x1+ p.x2+ p.x3+ p.x4) /4);
+		resize(img, img, Size(img.cols/tParams.resize_factor, img.rows/tParams.resize_factor));
+		//imshow("testing", img);
+		//waitKey();
+
+		/*tSetup.centroid.x = cvRound((p.x1+ p.x2+ p.x3+ p.x4) /4);
 		tSetup.centroid.y = cvRound((p.y1+ p.y2+ p.y3+ p.y4) /4);
 		double A1 = sqrt(pow(p.x1-p.x2,2) + pow(p.y1-p.y2,2)) * sqrt(pow(p.x2-p.x3,2) + pow(p.y2- p.y3,2));
 		double A2 = (right - left) * (bottom - top);
 		double s = sqrt(A1/A2);
 		tSetup.original.width = s * (right - left) + 1;
 		tSetup.original.height = s * (bottom - top) + 1;
-		
+		*/
+		tSetup.centroid.x/= tParams.resize_factor;
+		tSetup.centroid.y/= tParams.resize_factor;
+		tSetup.original.width/= tParams.resize_factor;
+		tSetup.original.height/=tParams.resize_factor;
+
 		//0- Preprocessing
 		//A- Create Translation Gaussian Filters
 		tSetup.padded.width= floor(tSetup.original.width * (1 + tParams.padding));
@@ -1244,14 +1256,21 @@ int main()
 {
 	cv::Mat initFrame;
 
-	string working_directory="/home/mennatullah/Datasets/Eglin/";
-	string datasetNames[]= {"egtest01/", "egtest02/", "egtest03/","egtest04/","egtest05/","redteam/"};
-	int nFrames[] = { 1820, 1300, 2570, 1832, 1763, 1917 };
+	//string working_directory="/home/mennatullah/Datasets/Eglin/";
+	//string datasetNames[]= {"egtest01/", "egtest02/", "egtest03/","egtest04/","egtest05/","redteam/"};
+	//int nFrames[] = { 1820, 1300, 2570, 1832, 1763, 1917 };
+
+	string working_directory="/home/mennatullah/Datasets/Human/";
+	string datasetNames[]= {"nl_bookI_s3/", "nl_bookII_s3/", "nl_bookIII_s3/"};
+	int nFrames[] = { 531, 577, 653};
+
 	int currentDS = 0;
 	string initFile = working_directory + datasetNames[currentDS] + "InitMulti.txt";
 	std::vector<target> targets;
 	ifstream fin(initFile.c_str());
-
+	cout<<"init file "<<initFile<<endl;
+	if(!fin)
+		return 0;
 	int ntargets, firstFrame;
 	int x, y, w, h;
 
@@ -1268,15 +1287,15 @@ int main()
 	}
 	fin.close();
 
-	int currentTarget= 3;
-	/*ofstream fout("region.txt");
+	int currentTarget= 0;
+	ofstream fout("region.txt");
 	fout<<targets[currentTarget].init.x<<","<<targets[currentTarget].init.y<<","<<targets[currentTarget].init.x+targets[currentTarget].init.width<<","<<targets[currentTarget].init.y<<",";
 	fout<<targets[currentTarget].init.x+targets[currentTarget].init.width<<","<<targets[currentTarget].init.y+targets[currentTarget].init.height<<","<<targets[currentTarget].init.x<<","<<targets[currentTarget].init.y+targets[currentTarget].init.height<<endl;
     fout.close();
-    */
+
 	//load region, images and prepare for output
 	DSSTTracker dsst;	
-	//dsst.generateFiles(working_directory + datasetNames[currentDS] + "frame", targets[currentTarget].firstFrame, nFrames[currentDS], 5);
+	dsst.generateFiles(working_directory + datasetNames[currentDS] + "frame", targets[currentTarget].firstFrame, nFrames[currentDS], 5);
 	
     cout<<"generated files"<<endl;
 	VOT vot_io("region.txt", "images.txt", "output.txt");
@@ -1291,11 +1310,11 @@ int main()
 	
 	dsst.preprocess(initFrame.rows,initFrame.cols, initFrame, left, top, right, bottom, p);
 	vot_io.outputPolygon(p);
-	cout<<"here 2"<<endl;
+	//couut<<"here 2"<<endl;
 	int frameNumber=1; 
     while (true)
 	{
-		cout << frameNumber << endl;
+		//cout << frameNumber << endl;
 		Mat currentFrame;
 		int nextFrame = vot_io.getNextImage(currentFrame);//, false);
 		

@@ -73,6 +73,7 @@ struct Params
 	int number_scales;
 	double scale_step;
 	int scale_model_max_area;
+	double resize_factor;
 
 	Params()
 	{
@@ -84,6 +85,7 @@ struct Params
 		number_scales= 33;
 		scale_step=1.02;
 		scale_model_max_area= 512;
+		resize_factor = 1;
 	}
 
 };
